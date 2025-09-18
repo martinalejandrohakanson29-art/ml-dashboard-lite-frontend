@@ -132,144 +132,154 @@
   </main>
 
 <script>
-// --- Helpers de config ---
-const els = (id) => document.getElementById(id)
-const cfg = {
-  get base() { return localStorage.getItem('api_base') || '' },
-  set base(v) { localStorage.setItem('api_base', v) },
-  get token() { return localStorage.getItem('api_token') || '' },
-  set token(v) { localStorage.setItem('api_token', v) }
-}
-function loadCfgIntoUI(){ els('apiBase').value = cfg.base; els('apiToken').value = cfg.token }
-function saveCfgFromUI(){ cfg.base = els('apiBase').value.trim(); cfg.token = els('apiToken').value.trim() }
-
-// --- HTTP con Bearer (ahora devuelve detalle de error del backend) ---
-async function apiGet(path) {
-  if (!cfg.base) throw new Error('Falta API Base URL')
-  const res = await fetch(cfg.base.replace(/\/$/, '') + path, {
-    headers: cfg.token ? { 'Authorization': 'Bearer ' + cfg.token } : {}
-  })
-  if (!res.ok) {
-    let detail = ''
-    try { const j = await res.json(); detail = j.detail || j.error || JSON.stringify(j) } catch {}
-    throw new Error(res.status + ' ' + res.statusText + (detail ? ' - ' + detail : ''))
-  }
-  return res.json()
-}
-
-// --- Router simple (por hash) ---
-function showView(id){
-  for (const el of document.querySelectorAll('.view')) el.classList.remove('active')
-  els(id).classList.add('active')
-  location.hash = id
-}
-window.addEventListener('hashchange', () => {
-  const id = location.hash.replace('#','')
-  if (id && document.getElementById(id)) showView(id)
-})
-
-// --- CSV helper puro + tests ---
-function toCsv(headers, rows){
-  const esc = (v) => String(v ?? '').replaceAll('"', '""')
-  const line = (r) => r.map(v => `"${esc(v)}"`).join(',')
-  return [headers.join(','), ...rows.map(line)].join('
-')
-}
-
-function runTests(){
-  const results = []
-  const ok = (name, cond) => results.push({ name, pass: !!cond })
-  // Test 1: líneas esperadas (header + 2 filas)
-  const h = ['a','b']; const r = [[1,2],[3,4]]
-  const csv1 = toCsv(h, r)
-  ok('líneas 3', csv1.split('
-').length === 3)
-  // Test 2: coma interna debe ir entre comillas
-  const csv2 = toCsv(['x'], [["a,b"]])
-  ok('coma en campo', csv2.includes('"a,b"'))
-  // Test 3: comillas internas se duplican
-  const csv3 = toCsv(['x'], [["a\"b"]])
-  ok('comillas duplicadas', csv3.includes('"a""b"'))
-  // Test 4: sin filas => solo header
-  const csv4 = toCsv(['x','y'], [])
-  ok('solo header', csv4 === 'x,y')
-
-  const passAll = results.every(t => t.pass)
-  console.log('[tests]', results)
-  const badge = els('testsBadge'); if (badge) badge.textContent = 'Tests: ' + (passAll ? 'OK' : 'FALLA')
-}
-
-// --- Utils de mapeo de campos ---
-const pick = (obj, keys, fallback='') => {
-  for (const k of keys) if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k]
-  return fallback
-}
-const fmtDate = (v) => {
-  const s = String(v ?? '')
-  if (!s) return ''
-  // soporta 'YYYY-MM-DD' o timestamptz 'YYYY-MM-DDTHH:mm:ssZ'
-  return s.includes('T') ? s.slice(0,10) : s
-}
-
-// --- Gestión FULL ---
-let fullRows = []
-function setDefaultDates(){
-  const to = new Date(); els('dateFull').value = to.toISOString().slice(0,10)
-}
-function renderFullTable(rows){
-  const tb = document.querySelector('#fullTable tbody')
-  tb.innerHTML = ''
-  rows.slice(0,1000).forEach(r => {
-    const itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
-    const title  = pick(r, ['title','item_title','name'])
-    const invId  = pick(r, ['inventory_id','inventoryId'])
-    const qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
-    const date   = fmtDate(pick(r, ['date','created_at','updated_at']))
-    const tr = document.createElement('tr')
-    tr.innerHTML = `<td>${itemId}</td><td>${title}</td><td>${invId}</td><td>${qty}</td><td>${date}</td>`
-    tb.appendChild(tr)
-  })
-  els('fullMeta').textContent = `Filas: ${rows.length}`
-}
-async function loadFull(){
+// Envolvemos TODO para asegurar que el DOM esté listo antes de bindear eventos
+document.addEventListener('DOMContentLoaded', () => {
   try {
-    const date = els('dateFull').value
-    const data = await apiGet(`/stock/full?date=${date}`)
-    fullRows = data.rows || []
-    renderFullTable(fullRows)
-  } catch (e) { alert('Error stock Full: ' + e.message) }
-}
-function applyFullFilter(){
-  const q = els('filterFull').value.trim().toLowerCase()
-  if (!q) return renderFullTable(fullRows)
-  const f = fullRows.filter(r =>
-    (String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase().includes(q)) ||
-    (String(pick(r,['title','item_title','name'],'')).toLowerCase().includes(q))
-  )
-  renderFullTable(f)
-}
-function exportCsv(){
-  const headers = ['item_id','title','inventory_id','qty','date']
-  const rows = Array.from(document.querySelectorAll('#fullTable tbody tr')).map(tr => Array.from(tr.children).map(td => td.textContent || ''))
-  const csv = toCsv(headers, rows)
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a'); a.href = url; a.download = `full_stock_${els('dateFull').value||'snapshot'}.csv`; a.click()
-  URL.revokeObjectURL(url)
-}
+    // --- Helpers de config ---
+    const els = (id) => document.getElementById(id)
+    const cfg = {
+      get base() { return localStorage.getItem('api_base') || '' },
+      set base(v) { localStorage.setItem('api_base', v) },
+      get token() { return localStorage.getItem('api_token') || '' },
+      set token(v) { localStorage.setItem('api_token', v) }
+    }
+    function loadCfgIntoUI(){ const b=els('apiBase'), t=els('apiToken'); if(b) b.value = cfg.base; if(t) t.value = cfg.token }
+    function saveCfgFromUI(){ const b=els('apiBase'), t=els('apiToken'); if(b) cfg.base = b.value.trim(); if(t) cfg.token = t.value.trim() }
 
-// --- Botones / eventos ---
-els('btnHome').onclick = () => showView('view-home')
-els('btnConfig').onclick = () => document.getElementById('configPanel').classList.toggle('show')
-els('saveCfg').onclick = () => { saveCfgFromUI(); alert('Guardado'); }
-els('goGestionFull').onclick = () => showView('view-gestion-full')
-els('backHome').onclick = () => showView('view-home')
-els('loadFull').onclick = loadFull
-els('filterFull').oninput = applyFullFilter
-els('exportCsv').onclick = exportCsv
+    // --- HTTP con Bearer (devuelve detalle de error del backend) ---
+    async function apiGet(path) {
+      if (!cfg.base) throw new Error('Falta API Base URL')
+      const res = await fetch(cfg.base.replace(/\/$/, '') + path, {
+        headers: cfg.token ? { 'Authorization': 'Bearer ' + cfg.token } : {}
+      })
+      if (!res.ok) {
+        let detail = ''
+        try { const j = await res.json(); detail = j.detail || j.error || JSON.stringify(j) } catch {}
+        throw new Error(res.status + ' ' + res.statusText + (detail ? ' - ' + detail : ''))
+      }
+      return res.json()
+    }
 
-// Init
-loadCfgIntoUI(); setDefaultDates(); runTests();
+    // --- Router simple (por hash) ---
+    function showView(id){
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'))
+      const v = els(id); if (v) v.classList.add('active')
+      location.hash = id
+    }
+    window.addEventListener('hashchange', () => {
+      const id = location.hash.replace('#','')
+      if (id && document.getElementById(id)) showView(id)
+    })
+
+    // --- CSV helper puro + tests ---
+    function toCsv(headers, rows){
+      const esc = (v) => String(v ?? '').replace(/"/g, '""') // sin replaceAll para máxima compatibilidad
+      const line = (r) => r.map(v => `"${esc(v)}"`).join(',')
+      return [headers.join(','), ...rows.map(line)].join('\n')
+    }
+
+    function runTests(){
+      const results = []
+      const ok = (name, cond) => results.push({ name, pass: !!cond })
+      // Test 1: líneas esperadas (header + 2 filas)
+      const h = ['a','b']; const r = [[1,2],[3,4]]
+      const csv1 = toCsv(h, r)
+      ok('líneas 3', csv1.split('\n').length === 3)
+      // Test 2: coma interna debe ir entre comillas
+      const csv2 = toCsv(['x'], [["a,b"]])
+      ok('coma en campo', csv2.includes('"a,b"'))
+      // Test 3: comillas internas se duplican
+      const csv3 = toCsv(['x'], [["a\"b"]])
+      ok('comillas duplicadas', csv3.includes('"a""b"'))
+      // Test 4: sin filas => solo header
+      const csv4 = toCsv(['x','y'], [])
+      ok('solo header', csv4 === 'x,y')
+
+      const passAll = results.every(t => t.pass)
+      console.log('[tests]', results)
+      const badge = els('testsBadge'); if (badge) badge.textContent = 'Tests: ' + (passAll ? 'OK' : 'FALLA')
+    }
+
+    // --- Utils de mapeo de campos ---
+    const pick = (obj, keys, fallback='') => {
+      for (const k of keys) if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k]
+      return fallback
+    }
+    const fmtDate = (v) => {
+      const s = String(v ?? '')
+      if (!s) return ''
+      return s.includes('T') ? s.slice(0,10) : s
+    }
+
+    // --- Gestión FULL ---
+    let fullRows = []
+    function setDefaultDates(){
+      const to = new Date(); const d=els('dateFull'); if (d) d.value = to.toISOString().slice(0,10)
+    }
+    function renderFullTable(rows){
+      const tb = document.querySelector('#fullTable tbody')
+      if (!tb) return
+      tb.innerHTML = ''
+      rows.slice(0,1000).forEach(r => {
+        const itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
+        const title  = pick(r, ['title','item_title','name'])
+        const invId  = pick(r, ['inventory_id','inventoryId'])
+        const qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
+        const date   = fmtDate(pick(r, ['date','created_at','updated_at']))
+        const tr = document.createElement('tr')
+        tr.innerHTML = `<td>${itemId}</td><td>${title}</td><td>${invId}</td><td>${qty}</td><td>${date}</td>`
+        tb.appendChild(tr)
+      })
+      const meta = els('fullMeta'); if (meta) meta.textContent = `Filas: ${rows.length}`
+    }
+    async function loadFull(){
+      try {
+        const d = els('dateFull'); const date = d ? d.value : ''
+        const data = await apiGet(`/stock/full?date=${date}`)
+        fullRows = data.rows || []
+        renderFullTable(fullRows)
+      } catch (e) { alert('Error stock Full: ' + e.message) }
+    }
+    function applyFullFilter(){
+      const inp = els('filterFull'); const q = (inp ? inp.value : '').trim().toLowerCase()
+      if (!q) return renderFullTable(fullRows)
+      const f = fullRows.filter(r =>
+        (String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase().includes(q)) ||
+        (String(pick(r,['title','item_title','name'],'')).toLowerCase().includes(q))
+      )
+      renderFullTable(f)
+    }
+    function exportCsv(){
+      const headers = ['item_id','title','inventory_id','qty','date']
+      const body = document.querySelector('#fullTable tbody')
+      const rows = body ? Array.from(body.querySelectorAll('tr')).map(tr => Array.from(tr.children).map(td => td.textContent || '')) : []
+      const csv = toCsv(headers, rows)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href = url; a.download = `full_stock_${(els('dateFull')?.value)||'snapshot'}.csv`; a.click()
+      URL.revokeObjectURL(url)
+    }
+
+    // --- Bindeo seguro de eventos ---
+    const safeBind = (id, handler) => { const el = els(id); if (el) el.onclick = (...args) => { try { handler(...args) } catch(e){ console.error('Error handler', id, e); alert(`Error en ${id}: ` + e.message) } }; else console.warn('Elemento no encontrado:', id) }
+
+    safeBind('btnHome', () => showView('view-home'))
+    safeBind('btnConfig', () => document.getElementById('configPanel').classList.toggle('show'))
+    safeBind('saveCfg', () => { saveCfgFromUI(); alert('Guardado'); })
+    safeBind('goGestionFull', () => showView('view-gestion-full'))
+    safeBind('backHome', () => showView('view-home'))
+    safeBind('loadFull', loadFull)
+    const ff = els('filterFull'); if (ff) ff.oninput = applyFullFilter
+    safeBind('exportCsv', exportCsv)
+
+    // Init
+    loadCfgIntoUI(); setDefaultDates(); runTests();
+    console.log('[init] UI lista')
+  } catch (e) {
+    console.error('[fatal] No se pudo inicializar la app:', e)
+    alert('Error inicializando la app: ' + (e?.message || e))
+  }
+})
 </script>
 </body>
 </html>
