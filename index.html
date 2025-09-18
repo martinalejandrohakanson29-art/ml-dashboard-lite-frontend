@@ -47,243 +47,181 @@
       <button class="btn" id="btnConfig">Config</button>
     </div>
   </header>
+  <!-- Debug: si este script corre, el DOM y JS básico están bien -->
+  <script>
+// Fallback global: mostrar errores JS en el badge
+window.onerror = function(msg, src, line, col, err){
+  try{var b=document.getElementById('jsStatus'); if(b) b.textContent='JS ERROR: '+msg;}catch(e){}
+}
 
-  <div id="configPanel" class="config">
-    <div class="row rowgap">
-      <div class="field">
-        <label>API Base URL</label>
-        <input id="apiBase" placeholder="https://tu-app.onrender.com" />
-      </div>
-      <div class="field">
-        <label>API Token (Bearer)</label>
-        <input id="apiToken" placeholder="Pegar tu API_SECRET" />
-      </div>
-      <button class="btn" id="saveCfg">Guardar</button>
-      <span class="muted">Se guarda local en tu navegador</span>
-      <span class="badge" id="testsBadge" title="Estado de tests internos">Tests: —</span>
-    </div>
-  </div>
-
-  <main>
-    <!-- Vista: Inicio (menú de módulos) -->
-    <section id="view-home" class="view active">
-      <div class="topbar">
-        <span class="badge">Elige un módulo</span>
-      </div>
-      <div class="grid menu-grid" style="margin-top:12px">
-        <div class="tile">
-          <h3>Gestión de Ventas y Envíos FULL</h3>
-          <p>Planificá reposición y visualizá stock FULL por fecha. <strong>(Activo)</strong></p>
-          <div><button class="btn primary" id="goGestionFull">Abrir</button></div>
-        </div>
-        <div class="tile" aria-disabled="true">
-          <h3>Resumen (KPIs)</h3>
-          <p>Ventas, visitas y conversión. <span class="muted">Próximamente</span></p>
-          <div><button class="btn" disabled>Próximamente</button></div>
-        </div>
-        <div class="tile" aria-disabled="true">
-          <h3>Explorador de Ítems</h3>
-          <p>Detalle por ítem con métricas. <span class="muted">Próximamente</span></p>
-          <div><button class="btn" disabled>Próximamente</button></div>
-        </div>
-        <div class="tile" aria-disabled="true">
-          <h3>Alertas de Reposición</h3>
-          <p>Riesgo por lead time 10 días. <span class="muted">Próximamente</span></p>
-          <div><button class="btn" disabled>Próximamente</button></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Vista: Gestión de Ventas y Envíos FULL -->
-    <section id="view-gestion-full" class="view">
-      <div class="card">
-        <div class="topbar">
-          <h2 style="margin:0;font-size:18px">Gestión de Ventas y Envíos FULL</h2>
-          <span class="badge" id="fullMeta">—</span>
-          <div style="margin-left:auto"></div>
-          <button class="btn" id="backHome">← Volver</button>
-        </div>
-        <div class="row rowgap" style="margin-top:12px">
-          <div class="field">
-            <label>Fecha snapshot de Full</label>
-            <input id="dateFull" type="date" />
-          </div>
-          <div class="field">
-            <label>Filtro (item_id o título)</label>
-            <input id="filterFull" placeholder="Ej: MLA123 / Escape Suzuki" />
-          </div>
-          <button class="btn primary" id="loadFull">Cargar stock Full</button>
-          <button class="btn" id="exportCsv">Exportar CSV</button>
-        </div>
-        <div style="margin-top:12px;overflow:auto">
-          <table class="table" id="fullTable">
-            <thead>
-              <tr>
-                <th>item_id</th>
-                <th>title</th>
-                <th>inventory_id</th>
-                <th>qty</th>
-                <th>date</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  </main>
-
-<script>
-// Envolvemos TODO para asegurar que el DOM esté listo antes de bindear eventos
-document.addEventListener('DOMContentLoaded', () => {
+// Versión ES5 (sin arrow, sin let/const, sin template strings, sin optional chaining)
+document.addEventListener('DOMContentLoaded', function(){
   try {
-    // --- Helpers de config ---
-    const els = (id) => document.getElementById(id)
-    const cfg = {
-      get base() { return localStorage.getItem('api_base') || '' },
-      set base(v) { localStorage.setItem('api_base', v) },
-      get token() { return localStorage.getItem('api_token') || '' },
-      set token(v) { localStorage.setItem('api_token', v) }
-    }
-    function loadCfgIntoUI(){ const b=els('apiBase'), t=els('apiToken'); if(b) b.value = cfg.base; if(t) t.value = cfg.token }
-    function saveCfgFromUI(){ const b=els('apiBase'), t=els('apiToken'); if(b) cfg.base = b.value.trim(); if(t) cfg.token = t.value.trim() }
+    // Helpers de DOM
+    function el(id){ return document.getElementById(id) }
 
-    // --- HTTP con Bearer (devuelve detalle de error del backend) ---
-    async function apiGet(path) {
-      if (!cfg.base) throw new Error('Falta API Base URL')
-      const res = await fetch(cfg.base.replace(/\/$/, '') + path, {
-        headers: cfg.token ? { 'Authorization': 'Bearer ' + cfg.token } : {}
+    // Config localStorage
+    var cfg = {
+      get base(){ return localStorage.getItem('api_base') || '' },
+      set base(v){ localStorage.setItem('api_base', v) },
+      get token(){ return localStorage.getItem('api_token') || '' },
+      set token(v){ localStorage.setItem('api_token', v) }
+    }
+    function loadCfgIntoUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) b.value = cfg.base; if(t) t.value = cfg.token }
+    function saveCfgFromUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) cfg.base = (b.value||'').trim(); if(t) cfg.token = (t.value||'').trim() }
+
+    // HTTP simple con Bearer
+    function apiGet(path){
+      return new Promise(function(resolve, reject){
+        if(!cfg.base) return reject(new Error('Falta API Base URL'))
+        var url = cfg.base.replace(/\/$/, '') + path
+        var opts = { headers: {} }
+        if (cfg.token) opts.headers['Authorization'] = 'Bearer ' + cfg.token
+        fetch(url, opts).then(function(res){
+          if(!res.ok){
+            res.text().then(function(t){
+              var detail = ''
+              try{ var j = JSON.parse(t); detail = j.detail || j.error || t }catch(_){ detail = t }
+              reject(new Error(res.status + ' ' + res.statusText + (detail? ' - ' + detail : '')))
+            }).catch(function(){ reject(new Error(res.status + ' ' + res.statusText)) })
+            return
+          }
+          res.json().then(resolve).catch(function(e){ reject(new Error('JSON parse: ' + e.message)) })
+        }).catch(function(e){ reject(e) })
       })
-      if (!res.ok) {
-        let detail = ''
-        try { const j = await res.json(); detail = j.detail || j.error || JSON.stringify(j) } catch {}
-        throw new Error(res.status + ' ' + res.statusText + (detail ? ' - ' + detail : ''))
-      }
-      return res.json()
     }
 
-    // --- Router simple (por hash) ---
+    // Router simple
     function showView(id){
-      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'))
-      const v = els(id); if (v) v.classList.add('active')
+      var nodes = document.querySelectorAll('.view');
+      for(var i=0;i<nodes.length;i++){ nodes[i].classList.remove('active') }
+      var v = el(id); if(v) v.classList.add('active')
       location.hash = id
     }
-    window.addEventListener('hashchange', () => {
-      const id = location.hash.replace('#','')
+    window.addEventListener('hashchange', function(){
+      var id = location.hash.replace('#','')
       if (id && document.getElementById(id)) showView(id)
     })
 
-    // --- CSV helper puro + tests ---
+    // CSV utils (compatibles)
     function toCsv(headers, rows){
-      const esc = (v) => String(v ?? '').replace(/"/g, '""') // sin replaceAll para máxima compatibilidad
-      const line = (r) => r.map(v => `"${esc(v)}"`).join(',')
-      return [headers.join(','), ...rows.map(line)].join('
+      function esc(v){ return String(v==null?'':v).replace(/\"/g, '""') }
+      function line(r){
+        var out = []
+        for(var i=0;i<r.length;i++){ out.push('"' + esc(r[i]) + '"') }
+        return out.join(',')
+      }
+      var lines = [headers.join(',')]
+      for(var i=0;i<rows.length;i++){ lines.push(line(rows[i])) }
+      return lines.join('
 ')
     }
 
+    // Tests básicos CSV
     function runTests(){
-      const results = []
-      const ok = (name, cond) => results.push({ name, pass: !!cond })
-      // Test 1: líneas esperadas (header + 2 filas)
-      const h = ['a','b']; const r = [[1,2],[3,4]]
-      const csv1 = toCsv(h, r)
-      ok('líneas 3', csv1.split('
-').length === 3)
-      // Test 2: coma interna debe ir entre comillas
-      const csv2 = toCsv(['x'], [["a,b"]])
-      ok('coma en campo', csv2.includes('"a,b"'))
-      // Test 3: comillas internas se duplican
-      const csv3 = toCsv(['x'], [["a\"b"]])
-      ok('comillas duplicadas', csv3.includes('"a""b"'))
-      // Test 4: sin filas => solo header
-      const csv4 = toCsv(['x','y'], [])
-      ok('solo header', csv4 === 'x,y')
-
-      const passAll = results.every(t => t.pass)
-      console.log('[tests]', results)
-      const badge = els('testsBadge'); if (badge) badge.textContent = 'Tests: ' + (passAll ? 'OK' : 'FALLA')
+      function ok(name, cond){ console.log('[test]', name, cond?'OK':'FAIL') }
+      var csv1 = toCsv(['a','b'], [[1,2],[3,4]])
+      ok('lineas', csv1.split('
+').length===3)
+      var csv2 = toCsv(['x'], [["a,b"]]); ok('coma', csv2.indexOf('"a,b"')>=0)
+      var csv3 = toCsv(['x'], [["a\"b"]]); ok('comillas', csv3.indexOf('"a""b"')>=0)
+      var csv4 = toCsv(['x','y'], []); ok('solo header', csv4==='x,y')
+      var badge = el('testsBadge'); if (badge) badge.textContent = 'Tests: OK'
     }
 
-    // --- Utils de mapeo de campos ---
-    const pick = (obj, keys, fallback='') => {
-      for (const k of keys) if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k]
+    // Utils de mapeo de campos
+    function pick(obj, keys, fallback){
+      if (fallback===undefined) fallback=''
+      for(var i=0;i<keys.length;i++){ var k=keys[i]; if(obj && obj[k]!==undefined && obj[k]!==null) return obj[k] }
       return fallback
     }
-    const fmtDate = (v) => {
-      const s = String(v ?? '')
-      if (!s) return ''
-      return s.includes('T') ? s.slice(0,10) : s
+    function fmtDate(v){
+      var s = String(v==null?'':v)
+      if(!s) return ''
+      return s.indexOf('T')>=0 ? s.slice(0,10) : s
     }
 
-    // --- Gestión FULL ---
-    let fullRows = []
-    function setDefaultDates(){
-      const to = new Date(); const d=els('dateFull'); if (d) d.value = to.toISOString().slice(0,10)
-    }
+    // Gestión FULL
+    var fullRows = []
+    function setDefaultDates(){ var d=el('dateFull'); if(d){ var to = new Date(); d.value = to.toISOString().slice(0,10) } }
     function renderFullTable(rows){
-      const tb = document.querySelector('#fullTable tbody')
-      if (!tb) return
+      var tb = document.querySelector('#fullTable tbody'); if(!tb) return
       tb.innerHTML = ''
-      rows.slice(0,1000).forEach(r => {
-        const itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
-        const title  = pick(r, ['title','item_title','name'])
-        const invId  = pick(r, ['inventory_id','inventoryId'])
-        const qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
-        const date   = fmtDate(pick(r, ['date','created_at','updated_at']))
-        const tr = document.createElement('tr')
-        tr.innerHTML = `<td>${itemId}</td><td>${title}</td><td>${invId}</td><td>${qty}</td><td>${date}</td>`
+      for(var i=0;i<Math.min(rows.length,1000);i++){
+        var r = rows[i]
+        var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
+        var title  = pick(r, ['title','item_title','name'])
+        var invId  = pick(r, ['inventory_id','inventoryId'])
+        var qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
+        var date   = fmtDate(pick(r, ['date','created_at','updated_at']))
+        var tr = document.createElement('tr')
+        tr.innerHTML = '<td>'+itemId+'</td><td>'+title+'</td><td>'+invId+'</td><td>'+qty+'</td><td>'+date+'</td>'
         tb.appendChild(tr)
-      })
-      const meta = els('fullMeta'); if (meta) meta.textContent = `Filas: ${rows.length}`
+      }
+      var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
     }
-    async function loadFull(){
+    function loadFull(){
       try {
-        const d = els('dateFull'); const date = d ? d.value : ''
-        const data = await apiGet(`/stock/full?date=${date}`)
-        fullRows = data.rows || []
-        renderFullTable(fullRows)
-      } catch (e) { alert('Error stock Full: ' + e.message) }
+        var d = el('dateFull'); var date = d? d.value : ''
+        apiGet('/stock/full?date='+encodeURIComponent(date)).then(function(data){
+          fullRows = data.rows || []
+          renderFullTable(fullRows)
+        }).catch(function(e){ alert('Error stock Full: ' + e.message) })
+      } catch(e){ alert('Error stock Full: ' + e.message) }
     }
     function applyFullFilter(){
-      const inp = els('filterFull'); const q = (inp ? inp.value : '').trim().toLowerCase()
+      var inp = el('filterFull'); var q = (inp?inp.value:'').trim().toLowerCase()
       if (!q) return renderFullTable(fullRows)
-      const f = fullRows.filter(r =>
-        (String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase().includes(q)) ||
-        (String(pick(r,['title','item_title','name'],'')).toLowerCase().includes(q))
-      )
+      var f = []
+      for(var i=0;i<fullRows.length;i++){
+        var r = fullRows[i]
+        var id = String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase()
+        var ti = String(pick(r,['title','item_title','name'],'')).toLowerCase()
+        if (id.indexOf(q)>=0 || ti.indexOf(q)>=0) f.push(r)
+      }
       renderFullTable(f)
     }
     function exportCsv(){
-      const headers = ['item_id','title','inventory_id','qty','date']
-      const body = document.querySelector('#fullTable tbody')
-      const rows = body ? Array.from(body.querySelectorAll('tr')).map(tr => Array.from(tr.children).map(td => td.textContent || '')) : []
-      const csv = toCsv(headers, rows)
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url; a.download = `full_stock_${(els('dateFull')?.value)||'snapshot'}.csv`; a.click()
+      var headers = ['item_id','title','inventory_id','qty','date']
+      var body = document.querySelector('#fullTable tbody')
+      var rows = []
+      if (body){
+        var trs = body.querySelectorAll('tr')
+        for(var i=0;i<trs.length;i++){
+          var tds = trs[i].children
+          var row = []
+          for(var j=0;j<tds.length;j++){ row.push(tds[j].textContent || '') }
+          rows.push(row)
+        }
+      }
+      var csv = toCsv(headers, rows)
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      var url = URL.createObjectURL(blob)
+      var a = document.createElement('a'); a.href = url; a.download = 'full_stock_'+((el('dateFull') && el('dateFull').value) || 'snapshot')+'.csv'; a.click()
       URL.revokeObjectURL(url)
     }
 
-    // --- Bindeo seguro de eventos ---
-    const safeBind = (id, handler) => { const el = els(id); if (el) el.onclick = (...args) => { try { handler(...args) } catch(e){ console.error('Error handler', id, e); alert(`Error en ${id}: ` + e.message) } }; else console.warn('Elemento no encontrado:', id) }
+    // Bind seguro de eventos
+    function bind(id, fn){ var node = el(id); if(node) node.onclick = function(){ try{ fn() }catch(e){ alert('Error '+id+': '+e.message) } }; }
+    bind('btnHome', function(){ showView('view-home') })
+    bind('btnConfig', function(){ var p=document.getElementById('configPanel'); if(p) p.classList.toggle('show') })
+    bind('saveCfg', function(){ saveCfgFromUI(); alert('Guardado') })
+    bind('goGestionFull', function(){ showView('view-gestion-full') })
+    bind('backHome', function(){ showView('view-home') })
+    bind('loadFull', loadFull)
+    var f = el('filterFull'); if (f) f.oninput = applyFullFilter
+    bind('exportCsv', exportCsv)
 
-    safeBind('btnHome', () => showView('view-home'))
-    safeBind('btnConfig', () => document.getElementById('configPanel').classList.toggle('show'))
-    safeBind('saveCfg', () => { saveCfgFromUI(); alert('Guardado'); })
-    safeBind('goGestionFull', () => showView('view-gestion-full'))
-    safeBind('backHome', () => showView('view-home'))
-    safeBind('loadFull', loadFull)
-    const ff = els('filterFull'); if (ff) ff.oninput = applyFullFilter
-    safeBind('exportCsv', exportCsv)
-
-        // Init
+    // Init
     loadCfgIntoUI(); setDefaultDates(); runTests();
-    const jsBadge = document.getElementById('jsStatus'); if (jsBadge) jsBadge.textContent = 'JS: OK'
-    const testBtn = document.getElementById('btnTestJs'); if (testBtn) testBtn.onclick = () => alert('JS funciona 🎉')
+    var s = document.getElementById('jsStatus'); if(s) s.textContent='JS: OK'
+    var t = document.getElementById('btnTestJs'); if(t) t.onclick=function(){ alert('JS funciona') }
     console.log('[init] UI lista')
+
   } catch (e) {
-    console.error('[fatal] No se pudo inicializar la app:', e)
-    alert('Error inicializando la app: ' + (e?.message || e))
+    console.error('[fatal] init error', e)
+    var s2=document.getElementById('jsStatus'); if(s2) s2.textContent='JS ERROR: '+(e.message||e)
+    alert('Error inicializando la app: ' + (e && e.message ? e.message : e))
   }
 })
 </script>
