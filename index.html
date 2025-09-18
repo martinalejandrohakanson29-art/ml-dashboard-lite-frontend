@@ -1,0 +1,249 @@
+<!-- index.html (frontend estático con pantalla inicial y módulo "Gestión de Ventas y Envíos FULL") -->
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ML Dashboard Lite</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    body { margin: 0; background:#0b0d10; color:#e7ecef; }
+    header { padding:16px 20px; border-bottom:1px solid #22262b; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    header h1 { font-size:18px; margin:0; font-weight:700; }
+    .row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field label { font-size:12px; color:#aeb6bf; }
+    .field input { padding:8px 10px; border-radius:10px; border:1px solid #2a3036; background:#111418; color:#e7ecef; min-width:260px; }
+    .btn { padding:10px 14px; border-radius:12px; border:1px solid #2a3036; background:#161a20; color:#e7ecef; cursor:pointer; font-weight:600; }
+    .btn:hover { background:#1a1f26; }
+    .btn.primary { background:#1e293b; border-color:#334155; }
+    .btn.primary:hover { background:#243142; }
+    .muted { color:#aeb6bf; font-size:12px; }
+    main { padding:20px; }
+    .view { display:none; }
+    .view.active { display:block; }
+    .grid { display:grid; gap:14px; }
+    .menu-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .tile { background:#101318; border:1px solid #21262d; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px; }
+    .tile h3 { margin:0; font-size:16px; }
+    .tile p { margin:0; color:#aeb6bf; font-size:13px; }
+    .card { background:#101318; border:1px solid #21262d; border-radius:16px; padding:16px; }
+    .rowgap { gap:10px; }
+    .table { width:100%; border-collapse: collapse; font-size:14px; }
+    .table th, .table td { border-bottom:1px solid #20242a; padding:8px; text-align:left; }
+    .topbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#16202a; border:1px solid #2a3440; font-size:12px; color:#aeb6bf; }
+    .config { padding:12px 16px; border-top:1px solid #22262b; display:none; }
+    .config.show { display:block; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ML Dashboard Lite</h1>
+    <div class="row">
+      <button class="btn" id="btnHome">Inicio</button>
+      <button class="btn" id="btnConfig">Config</button>
+    </div>
+  </header>
+
+  <div id="configPanel" class="config">
+    <div class="row rowgap">
+      <div class="field">
+        <label>API Base URL</label>
+        <input id="apiBase" placeholder="https://tu-app.onrender.com" />
+      </div>
+      <div class="field">
+        <label>API Token (Bearer)</label>
+        <input id="apiToken" placeholder="Pegar tu API_SECRET" />
+      </div>
+      <button class="btn" id="saveCfg">Guardar</button>
+      <span class="muted">Se guarda local en tu navegador</span>
+      <span class="badge" id="testsBadge" title="Estado de tests internos">Tests: —</span>
+    </div>
+  </div>
+
+  <main>
+    <!-- Vista: Inicio (menú de módulos) -->
+    <section id="view-home" class="view active">
+      <div class="topbar">
+        <span class="badge">Elige un módulo</span>
+      </div>
+      <div class="grid menu-grid" style="margin-top:12px">
+        <div class="tile">
+          <h3>Gestión de Ventas y Envíos FULL</h3>
+          <p>Planificá reposición y visualizá stock FULL por fecha. <strong>(Activo)</strong></p>
+          <div><button class="btn primary" id="goGestionFull">Abrir</button></div>
+        </div>
+        <div class="tile" aria-disabled="true">
+          <h3>Resumen (KPIs)</h3>
+          <p>Ventas, visitas y conversión. <span class="muted">Próximamente</span></p>
+          <div><button class="btn" disabled>Próximamente</button></div>
+        </div>
+        <div class="tile" aria-disabled="true">
+          <h3>Explorador de Ítems</h3>
+          <p>Detalle por ítem con métricas. <span class="muted">Próximamente</span></p>
+          <div><button class="btn" disabled>Próximamente</button></div>
+        </div>
+        <div class="tile" aria-disabled="true">
+          <h3>Alertas de Reposición</h3>
+          <p>Riesgo por lead time 10 días. <span class="muted">Próximamente</span></p>
+          <div><button class="btn" disabled>Próximamente</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vista: Gestión de Ventas y Envíos FULL -->
+    <section id="view-gestion-full" class="view">
+      <div class="card">
+        <div class="topbar">
+          <h2 style="margin:0;font-size:18px">Gestión de Ventas y Envíos FULL</h2>
+          <span class="badge" id="fullMeta">—</span>
+          <div style="margin-left:auto"></div>
+          <button class="btn" id="backHome">← Volver</button>
+        </div>
+        <div class="row rowgap" style="margin-top:12px">
+          <div class="field">
+            <label>Fecha snapshot de Full</label>
+            <input id="dateFull" type="date" />
+          </div>
+          <div class="field">
+            <label>Filtro (item_id o título)</label>
+            <input id="filterFull" placeholder="Ej: MLA123 / Escape Suzuki" />
+          </div>
+          <button class="btn primary" id="loadFull">Cargar stock Full</button>
+          <button class="btn" id="exportCsv">Exportar CSV</button>
+        </div>
+        <div style="margin-top:12px;overflow:auto">
+          <table class="table" id="fullTable">
+            <thead>
+              <tr>
+                <th>item_id</th>
+                <th>title</th>
+                <th>inventory_id</th>
+                <th>qty</th>
+                <th>date</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+// --- Helpers de config ---
+const els = (id) => document.getElementById(id)
+const cfg = {
+  get base() { return localStorage.getItem('api_base') || '' },
+  set base(v) { localStorage.setItem('api_base', v) },
+  get token() { return localStorage.getItem('api_token') || '' },
+  set token(v) { localStorage.setItem('api_token', v) }
+}
+function loadCfgIntoUI(){ els('apiBase').value = cfg.base; els('apiToken').value = cfg.token }
+function saveCfgFromUI(){ cfg.base = els('apiBase').value.trim(); cfg.token = els('apiToken').value.trim() }
+
+// --- HTTP con Bearer ---
+async function apiGet(path) {
+  if (!cfg.base) throw new Error('Falta API Base URL')
+  const res = await fetch(cfg.base.replace(/\/$/, '') + path, {
+    headers: cfg.token ? { 'Authorization': 'Bearer ' + cfg.token } : {}
+  })
+  if (!res.ok) throw new Error(res.status + ' ' + res.statusText)
+  return res.json()
+}
+
+// --- Router simple (por hash) ---
+function showView(id){
+  for (const el of document.querySelectorAll('.view')) el.classList.remove('active')
+  els(id).classList.add('active')
+  location.hash = id
+}
+window.addEventListener('hashchange', () => {
+  const id = location.hash.replace('#','')
+  if (id && document.getElementById(id)) showView(id)
+})
+
+// --- CSV helper puro + tests ---
+function toCsv(headers, rows){
+  const esc = (v) => String(v ?? '').replaceAll('"', '""')
+  const line = (r) => r.map(v => `"${esc(v)}"`).join(',')
+  return [headers.join(','), ...rows.map(line)].join('\n')
+}
+
+function runTests(){
+  const results = []
+  const ok = (name, cond) => results.push({ name, pass: !!cond })
+  // Test 1: líneas esperadas (header + 2 filas)
+  const h = ['a','b']; const r = [[1,2],[3,4]]
+  const csv1 = toCsv(h, r)
+  ok('líneas 3', csv1.split('\n').length === 3)
+  // Test 2: coma interna debe ir entre comillas
+  const csv2 = toCsv(['x'], [["a,b"]])
+  ok('coma en campo', csv2.includes('"a,b"'))
+  // Test 3: comillas internas se duplican
+  const csv3 = toCsv(['x'], [["a\"b"]])
+  ok('comillas duplicadas', csv3.includes('"a""b"'))
+  // Test 4: sin filas => solo header
+  const csv4 = toCsv(['x','y'], [])
+  ok('solo header', csv4 === 'x,y')
+
+  const passAll = results.every(t => t.pass)
+  console.log('[tests]', results)
+  const badge = els('testsBadge'); if (badge) badge.textContent = 'Tests: ' + (passAll ? 'OK' : 'FALLA')
+}
+
+// --- Gestión FULL ---
+let fullRows = []
+function setDefaultDates(){
+  const to = new Date(); els('dateFull').value = to.toISOString().slice(0,10)
+}
+function renderFullTable(rows){
+  const tb = document.querySelector('#fullTable tbody')
+  tb.innerHTML = ''
+  rows.slice(0,1000).forEach(r => {
+    const tr = document.createElement('tr')
+    tr.innerHTML = `<td>${r.item_id??''}</td><td>${r.item_title??''}</td><td>${r.inventory_id??''}</td><td>${r.quantity??r.qty??''}</td><td>${r.date??''}</td>`
+    tb.appendChild(tr)
+  })
+  els('fullMeta').textContent = `Filas: ${rows.length}`
+}
+async function loadFull(){
+  try {
+    const date = els('dateFull').value
+    const data = await apiGet(`/stock/full?date=${date}`)
+    fullRows = data.rows || []
+    renderFullTable(fullRows)
+  } catch (e) { alert('Error stock Full: ' + e.message) }
+}
+function applyFullFilter(){
+  const q = els('filterFull').value.trim().toLowerCase()
+  if (!q) return renderFullTable(fullRows)
+  const f = fullRows.filter(r => (r.item_id||'').toLowerCase().includes(q) || (r.item_title||'').toLowerCase().includes(q))
+  renderFullTable(f)
+}
+function exportCsv(){
+  const headers = ['item_id','item_title','inventory_id','qty','date']
+  const rows = Array.from(document.querySelectorAll('#fullTable tbody tr')).map(tr => Array.from(tr.children).map(td => td.textContent || ''))
+  const csv = toCsv(headers, rows)
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = `full_stock_${els('dateFull').value||'snapshot'}.csv`; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// --- Botones / eventos ---
+els('btnHome').onclick = () => showView('view-home')
+els('btnConfig').onclick = () => document.getElementById('configPanel').classList.toggle('show')
+els('saveCfg').onclick = () => { saveCfgFromUI(); alert('Guardado'); }
+els('goGestionFull').onclick = () => showView('view-gestion-full')
+els('backHome').onclick = () => showView('view-home')
+els('loadFull').onclick = loadFull
+els('filterFull').oninput = applyFullFilter
+els('exportCsv').onclick = exportCsv
+
+// Init
+loadCfgIntoUI(); setDefaultDates(); runTests();
+</script>
+</body>
+</html>
