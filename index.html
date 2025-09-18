@@ -47,183 +47,250 @@
       <button class="btn" id="btnConfig">Config</button>
     </div>
   </header>
-  <!-- Debug: si este script corre, el DOM y JS básico están bien -->
+
+  <main>
+    <!-- PANEL DE CONFIG -->
+    <section id="configPanel" class="config">
+      <div class="row rowgap">
+        <div class="field">
+          <label for="apiBase">API Base URL</label>
+          <input id="apiBase" placeholder="https://tu-back.onrender.com" />
+        </div>
+        <div class="field">
+          <label for="apiToken">API Token (Bearer)</label>
+          <input id="apiToken" placeholder="APP_USR-..." />
+        </div>
+        <button class="btn primary" id="saveCfg">Guardar</button>
+        <span class="badge" id="testsBadge">Tests: …</span>
+      </div>
+    </section>
+
+    <!-- INICIO -->
+    <section id="view-home" class="view active">
+      <div class="grid menu-grid">
+        <div class="tile">
+          <h3>Gestión de Ventas y Envíos FULL</h3>
+          <p>Consulta el stock FULL por fecha, filtrá y exportá CSV.</p>
+          <div class="row">
+            <button class="btn primary" id="goGestionFull">Abrir módulo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GESTIÓN FULL -->
+    <section id="view-gestion-full" class="view">
+      <div class="card" style="margin-bottom:14px;">
+        <div class="topbar">
+          <button class="btn" id="backHome">← Volver</button>
+          <div class="field">
+            <label for="dateFull">Fecha</label>
+            <input id="dateFull" type="date" />
+          </div>
+          <div class="field">
+            <label for="filterFull">Filtro (item_id o título)</label>
+            <input id="filterFull" placeholder="MLA..., título..." />
+          </div>
+          <button class="btn primary" id="loadFull">Cargar</button>
+          <button class="btn" id="exportCsv">Exportar CSV</button>
+          <span class="badge" id="fullMeta">Filas: 0</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="overflow:auto;">
+          <table id="fullTable" class="table">
+            <thead>
+              <tr>
+                <th>item_id</th>
+                <th>title</th>
+                <th>inventory_id</th>
+                <th>qty</th>
+                <th>date</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- JS -->
   <script>
-// Fallback global: mostrar errores JS en el badge
-window.onerror = function(msg, src, line, col, err){
-  try{var b=document.getElementById('jsStatus'); if(b) b.textContent='JS ERROR: '+msg;}catch(e){}
-}
-
-// Versión ES5 (sin arrow, sin let/const, sin template strings, sin optional chaining)
-document.addEventListener('DOMContentLoaded', function(){
-  try {
-    // Helpers de DOM
-    function el(id){ return document.getElementById(id) }
-
-    // Config localStorage
-    var cfg = {
-      get base(){ return localStorage.getItem('api_base') || '' },
-      set base(v){ localStorage.setItem('api_base', v) },
-      get token(){ return localStorage.getItem('api_token') || '' },
-      set token(v){ localStorage.setItem('api_token', v) }
-    }
-    function loadCfgIntoUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) b.value = cfg.base; if(t) t.value = cfg.token }
-    function saveCfgFromUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) cfg.base = (b.value||'').trim(); if(t) cfg.token = (t.value||'').trim() }
-
-    // HTTP simple con Bearer
-    function apiGet(path){
-      return new Promise(function(resolve, reject){
-        if(!cfg.base) return reject(new Error('Falta API Base URL'))
-        var url = cfg.base.replace(/\/$/, '') + path
-        var opts = { headers: {} }
-        if (cfg.token) opts.headers['Authorization'] = 'Bearer ' + cfg.token
-        fetch(url, opts).then(function(res){
-          if(!res.ok){
-            res.text().then(function(t){
-              var detail = ''
-              try{ var j = JSON.parse(t); detail = j.detail || j.error || t }catch(_){ detail = t }
-              reject(new Error(res.status + ' ' + res.statusText + (detail? ' - ' + detail : '')))
-            }).catch(function(){ reject(new Error(res.status + ' ' + res.statusText)) })
-            return
-          }
-          res.json().then(resolve).catch(function(e){ reject(new Error('JSON parse: ' + e.message)) })
-        }).catch(function(e){ reject(e) })
-      })
-    }
-
-    // Router simple
-    function showView(id){
-      var nodes = document.querySelectorAll('.view');
-      for(var i=0;i<nodes.length;i++){ nodes[i].classList.remove('active') }
-      var v = el(id); if(v) v.classList.add('active')
-      location.hash = id
-    }
-    window.addEventListener('hashchange', function(){
-      var id = location.hash.replace('#','')
-      if (id && document.getElementById(id)) showView(id)
-    })
-
-    // CSV utils (compatibles)
-    function toCsv(headers, rows){
-      function esc(v){ return String(v==null?'':v).replace(/\"/g, '""') }
-      function line(r){
-        var out = []
-        for(var i=0;i<r.length;i++){ out.push('"' + esc(r[i]) + '"') }
-        return out.join(',')
-      }
-      var lines = [headers.join(',')]
-      for(var i=0;i<rows.length;i++){ lines.push(line(rows[i])) }
-      return lines.join('
-')
-    }
-
-    // Tests básicos CSV
-    function runTests(){
-      function ok(name, cond){ console.log('[test]', name, cond?'OK':'FAIL') }
-      var csv1 = toCsv(['a','b'], [[1,2],[3,4]])
-      ok('lineas', csv1.split('
-').length===3)
-      var csv2 = toCsv(['x'], [["a,b"]]); ok('coma', csv2.indexOf('"a,b"')>=0)
-      var csv3 = toCsv(['x'], [["a\"b"]]); ok('comillas', csv3.indexOf('"a""b"')>=0)
-      var csv4 = toCsv(['x','y'], []); ok('solo header', csv4==='x,y')
-      var badge = el('testsBadge'); if (badge) badge.textContent = 'Tests: OK'
-    }
-
-    // Utils de mapeo de campos
-    function pick(obj, keys, fallback){
-      if (fallback===undefined) fallback=''
-      for(var i=0;i<keys.length;i++){ var k=keys[i]; if(obj && obj[k]!==undefined && obj[k]!==null) return obj[k] }
-      return fallback
-    }
-    function fmtDate(v){
-      var s = String(v==null?'':v)
-      if(!s) return ''
-      return s.indexOf('T')>=0 ? s.slice(0,10) : s
-    }
-
-    // Gestión FULL
-    var fullRows = []
-    function setDefaultDates(){ var d=el('dateFull'); if(d){ var to = new Date(); d.value = to.toISOString().slice(0,10) } }
-    function renderFullTable(rows){
-      var tb = document.querySelector('#fullTable tbody'); if(!tb) return
-      tb.innerHTML = ''
-      for(var i=0;i<Math.min(rows.length,1000);i++){
-        var r = rows[i]
-        var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
-        var title  = pick(r, ['title','item_title','name'])
-        var invId  = pick(r, ['inventory_id','inventoryId'])
-        var qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
-        var date   = fmtDate(pick(r, ['date','created_at','updated_at']))
-        var tr = document.createElement('tr')
-        tr.innerHTML = '<td>'+itemId+'</td><td>'+title+'</td><td>'+invId+'</td><td>'+qty+'</td><td>'+date+'</td>'
-        tb.appendChild(tr)
-      }
-      var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
-    }
-    function loadFull(){
-      try {
-        var d = el('dateFull'); var date = d? d.value : ''
-        apiGet('/stock/full?date='+encodeURIComponent(date)).then(function(data){
-          fullRows = data.rows || []
-          renderFullTable(fullRows)
-        }).catch(function(e){ alert('Error stock Full: ' + e.message) })
-      } catch(e){ alert('Error stock Full: ' + e.message) }
-    }
-    function applyFullFilter(){
-      var inp = el('filterFull'); var q = (inp?inp.value:'').trim().toLowerCase()
-      if (!q) return renderFullTable(fullRows)
-      var f = []
-      for(var i=0;i<fullRows.length;i++){
-        var r = fullRows[i]
-        var id = String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase()
-        var ti = String(pick(r,['title','item_title','name'],'')).toLowerCase()
-        if (id.indexOf(q)>=0 || ti.indexOf(q)>=0) f.push(r)
-      }
-      renderFullTable(f)
-    }
-    function exportCsv(){
-      var headers = ['item_id','title','inventory_id','qty','date']
-      var body = document.querySelector('#fullTable tbody')
-      var rows = []
-      if (body){
-        var trs = body.querySelectorAll('tr')
-        for(var i=0;i<trs.length;i++){
-          var tds = trs[i].children
-          var row = []
-          for(var j=0;j<tds.length;j++){ row.push(tds[j].textContent || '') }
-          rows.push(row)
-        }
-      }
-      var csv = toCsv(headers, rows)
-      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-      var url = URL.createObjectURL(blob)
-      var a = document.createElement('a'); a.href = url; a.download = 'full_stock_'+((el('dateFull') && el('dateFull').value) || 'snapshot')+'.csv'; a.click()
-      URL.revokeObjectURL(url)
-    }
-
-    // Bind seguro de eventos
-    function bind(id, fn){ var node = el(id); if(node) node.onclick = function(){ try{ fn() }catch(e){ alert('Error '+id+': '+e.message) } }; }
-    bind('btnHome', function(){ showView('view-home') })
-    bind('btnConfig', function(){ var p=document.getElementById('configPanel'); if(p) p.classList.toggle('show') })
-    bind('saveCfg', function(){ saveCfgFromUI(); alert('Guardado') })
-    bind('goGestionFull', function(){ showView('view-gestion-full') })
-    bind('backHome', function(){ showView('view-home') })
-    bind('loadFull', loadFull)
-    var f = el('filterFull'); if (f) f.oninput = applyFullFilter
-    bind('exportCsv', exportCsv)
-
-    // Init
-    loadCfgIntoUI(); setDefaultDates(); runTests();
-    var s = document.getElementById('jsStatus'); if(s) s.textContent='JS: OK'
-    var t = document.getElementById('btnTestJs'); if(t) t.onclick=function(){ alert('JS funciona') }
-    console.log('[init] UI lista')
-
-  } catch (e) {
-    console.error('[fatal] init error', e)
-    var s2=document.getElementById('jsStatus'); if(s2) s2.textContent='JS ERROR: '+(e.message||e)
-    alert('Error inicializando la app: ' + (e && e.message ? e.message : e))
+  // Fallback global: mostrar errores JS en el badge
+  window.onerror = function(msg, src, line, col, err){
+    try{var b=document.getElementById('jsStatus'); if(b) b.textContent='JS ERROR: '+msg;}catch(e){}
   }
-})
-</script>
+
+  // Versión ES5 (sin arrow, sin let/const, sin template strings, sin optional chaining)
+  document.addEventListener('DOMContentLoaded', function(){
+    try {
+      // Helpers de DOM
+      function el(id){ return document.getElementById(id) }
+
+      // Config localStorage
+      var cfg = {
+        get base(){ return localStorage.getItem('api_base') || '' },
+        set base(v){ localStorage.setItem('api_base', v) },
+        get token(){ return localStorage.getItem('api_token') || '' },
+        set token(v){ localStorage.setItem('api_token', v) }
+      }
+      function loadCfgIntoUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) b.value = cfg.base; if(t) t.value = cfg.token }
+      function saveCfgFromUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) cfg.base = (b.value||'').trim(); if(t) cfg.token = (t.value||'').trim() }
+
+      // HTTP simple con Bearer
+      function apiGet(path){
+        return new Promise(function(resolve, reject){
+          if(!cfg.base) return reject(new Error('Falta API Base URL'))
+          var url = cfg.base.replace(/\/$/, '') + path
+          var opts = { headers: {} }
+          if (cfg.token) opts.headers['Authorization'] = 'Bearer ' + cfg.token
+          fetch(url, opts).then(function(res){
+            if(!res.ok){
+              res.text().then(function(t){
+                var detail = ''
+                try{ var j = JSON.parse(t); detail = j.detail || j.error || t }catch(_){ detail = t }
+                reject(new Error(res.status + ' ' + res.statusText + (detail? ' - ' + detail : '')))
+              }).catch(function(){ reject(new Error(res.status + ' ' + res.statusText)) })
+              return
+            }
+            res.json().then(resolve).catch(function(e){ reject(new Error('JSON parse: ' + e.message)) })
+          }).catch(function(e){ reject(e) })
+        })
+      }
+
+      // Router simple
+      function showView(id){
+        var nodes = document.querySelectorAll('.view');
+        for(var i=0;i<nodes.length;i++){ nodes[i].classList.remove('active') }
+        var v = el(id); if(v) v.classList.add('active')
+        location.hash = id
+      }
+      window.addEventListener('hashchange', function(){
+        var id = location.hash.replace('#','')
+        if (id && document.getElementById(id)) showView(id)
+      })
+
+      // CSV utils (compatibles)
+      function toCsv(headers, rows){
+        function esc(v){ return String(v==null?'':v).replace(/\"/g, '""') }
+        function line(r){
+          var out = []
+          for(var i=0;i<r.length;i++){ out.push('"' + esc(r[i]) + '"') }
+          return out.join(',')
+        }
+        var lines = [headers.join(',')]
+        for(var i=0;i<rows.length;i++){ lines.push(line(rows[i])) }
+        return lines.join('\n')
+      }
+
+      // Tests básicos CSV
+      function runTests(){
+        function ok(name, cond){ console.log('[test]', name, cond?'OK':'FAIL') }
+        var csv1 = toCsv(['a','b'], [[1,2],[3,4]])
+        ok('lineas', csv1.split('\n').length===3)
+        var csv2 = toCsv(['x'], [["a,b"]]); ok('coma', csv2.indexOf('"a,b"')>=0)
+        var csv3 = toCsv(['x'], [["a\"b"]]); ok('comillas', csv3.indexOf('"a""b"')>=0)
+        var csv4 = toCsv(['x','y'], []); ok('solo header', csv4==='x,y')
+        var badge = el('testsBadge'); if (badge) badge.textContent = 'Tests: OK'
+      }
+
+      // Utils de mapeo de campos
+      function pick(obj, keys, fallback){
+        if (fallback===undefined) fallback=''
+        for(var i=0;i<keys.length;i++){ var k=keys[i]; if(obj && obj[k]!==undefined && obj[k]!==null) return obj[k] }
+        return fallback
+      }
+      function fmtDate(v){
+        var s = String(v==null?'':v)
+        if(!s) return ''
+        return s.indexOf('T')>=0 ? s.slice(0,10) : s
+      }
+
+      // Gestión FULL
+      var fullRows = []
+      function setDefaultDates(){ var d=el('dateFull'); if(d){ var to = new Date(); d.value = to.toISOString().slice(0,10) } }
+      function renderFullTable(rows){
+        var tb = document.querySelector('#fullTable tbody'); if(!tb) return
+        tb.innerHTML = ''
+        for(var i=0;i<Math.min(rows.length,1000);i++){
+          var r = rows[i]
+          var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
+          var title  = pick(r, ['title','item_title','name'])
+          var invId  = pick(r, ['inventory_id','inventoryId'])
+          var qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
+          var date   = fmtDate(pick(r, ['date','created_at','updated_at']))
+          var tr = document.createElement('tr')
+          tr.innerHTML = '<td>'+itemId+'</td><td>'+title+'</td><td>'+invId+'</td><td>'+qty+'</td><td>'+date+'</td>'
+          tb.appendChild(tr)
+        }
+        var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
+      }
+      function loadFull(){
+        try {
+          var d = el('dateFull'); var date = d? d.value : ''
+          apiGet('/stock/full?date='+encodeURIComponent(date)).then(function(data){
+            fullRows = data.rows || []
+            renderFullTable(fullRows)
+          }).catch(function(e){ alert('Error stock Full: ' + e.message) })
+        } catch(e){ alert('Error stock Full: ' + e.message) }
+      }
+      function applyFullFilter(){
+        var inp = el('filterFull'); var q = (inp?inp.value:'').trim().toLowerCase()
+        if (!q) return renderFullTable(fullRows)
+        var f = []
+        for(var i=0;i<fullRows.length;i++){
+          var r = fullRows[i]
+          var id = String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase()
+          var ti = String(pick(r,['title','item_title','name'],'')).toLowerCase()
+          if (id.indexOf(q)>=0 || ti.indexOf(q)>=0) f.push(r)
+        }
+        renderFullTable(f)
+      }
+      function exportCsv(){
+        var headers = ['item_id','title','inventory_id','qty','date']
+        var body = document.querySelector('#fullTable tbody')
+        var rows = []
+        if (body){
+          var trs = body.querySelectorAll('tr')
+          for(var i=0;i<trs.length;i++){
+            var tds = trs[i].children
+            var row = []
+            for(var j=0;j<tds.length;j++){ row.push(tds[j].textContent || '') }
+            rows.push(row)
+          }
+        }
+        var csv = toCsv(headers, rows)
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        var url = URL.createObjectURL(blob)
+        var a = document.createElement('a'); a.href = url; a.download = 'full_stock_'+((el('dateFull') && el('dateFull').value) || 'snapshot')+'.csv'; a.click()
+        URL.revokeObjectURL(url)
+      }
+
+      // Bind de eventos
+      function bind(id, fn){ var node = el(id); if(node) node.onclick = function(){ try{ fn() }catch(e){ alert('Error '+id+': '+e.message) } }; }
+      bind('btnHome', function(){ showView('view-home') })
+      bind('btnConfig', function(){ var p=document.getElementById('configPanel'); if(p) p.classList.toggle('show') })
+      bind('saveCfg', function(){ saveCfgFromUI(); alert('Guardado') })
+      bind('goGestionFull', function(){ showView('view-gestion-full') })
+      bind('backHome', function(){ showView('view-home') })
+      bind('loadFull', loadFull)
+      var f = el('filterFull'); if (f) f.oninput = applyFullFilter
+      bind('exportCsv', exportCsv)
+
+      // Init
+      loadCfgIntoUI(); setDefaultDates(); runTests();
+      var s = document.getElementById('jsStatus'); if(s) s.textContent='JS: OK'
+      var t = document.getElementById('btnTestJs'); if(t) t.onclick=function(){ alert('JS funciona') }
+      console.log('[init] UI lista')
+
+    } catch (e) {
+      console.error('[fatal] init error', e)
+      var s2=document.getElementById('jsStatus'); if(s2) s2.textContent='JS ERROR: '+(e.message||e)
+      alert('Error inicializando la app: ' + (e && e.message ? e.message : e))
+    }
+  })
+  </script>
 </body>
 </html>
