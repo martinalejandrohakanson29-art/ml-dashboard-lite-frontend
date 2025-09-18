@@ -41,6 +41,8 @@
   <header>
     <h1>ML Dashboard Lite</h1>
     <div class="row">
+      <span class="badge" id="jsStatus">JS: cargando…</span>
+      <button class="btn" id="btnTestJs">Test JS</button>
       <button class="btn" id="btnHome">Inicio</button>
       <button class="btn" id="btnConfig">Config</button>
     </div>
@@ -175,7 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function toCsv(headers, rows){
       const esc = (v) => String(v ?? '').replace(/"/g, '""') // sin replaceAll para máxima compatibilidad
       const line = (r) => r.map(v => `"${esc(v)}"`).join(',')
-      return [headers.join(','), ...rows.map(line)].join('\n')
+      return [headers.join(','), ...rows.map(line)].join('
+')
     }
 
     function runTests(){
@@ -184,7 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Test 1: líneas esperadas (header + 2 filas)
       const h = ['a','b']; const r = [[1,2],[3,4]]
       const csv1 = toCsv(h, r)
-      ok('líneas 3', csv1.split('\n').length === 3)
+      ok('líneas 3', csv1.split('
+').length === 3)
       // Test 2: coma interna debe ir entre comillas
       const csv2 = toCsv(['x'], [["a,b"]])
       ok('coma en campo', csv2.includes('"a,b"'))
@@ -272,8 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const ff = els('filterFull'); if (ff) ff.oninput = applyFullFilter
     safeBind('exportCsv', exportCsv)
 
-    // Init
+        // Init
     loadCfgIntoUI(); setDefaultDates(); runTests();
+    const jsBadge = document.getElementById('jsStatus'); if (jsBadge) jsBadge.textContent = 'JS: OK'
+    const testBtn = document.getElementById('btnTestJs'); if (testBtn) testBtn.onclick = () => alert('JS funciona 🎉')
     console.log('[init] UI lista')
   } catch (e) {
     console.error('[fatal] No se pudo inicializar la app:', e)
