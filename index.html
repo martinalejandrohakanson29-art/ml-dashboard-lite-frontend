@@ -143,13 +143,17 @@ const cfg = {
 function loadCfgIntoUI(){ els('apiBase').value = cfg.base; els('apiToken').value = cfg.token }
 function saveCfgFromUI(){ cfg.base = els('apiBase').value.trim(); cfg.token = els('apiToken').value.trim() }
 
-// --- HTTP con Bearer ---
+// --- HTTP con Bearer (ahora devuelve detalle de error del backend) ---
 async function apiGet(path) {
   if (!cfg.base) throw new Error('Falta API Base URL')
   const res = await fetch(cfg.base.replace(/\/$/, '') + path, {
     headers: cfg.token ? { 'Authorization': 'Bearer ' + cfg.token } : {}
   })
-  if (!res.ok) throw new Error(res.status + ' ' + res.statusText)
+  if (!res.ok) {
+    let detail = ''
+    try { const j = await res.json(); detail = j.detail || j.error || JSON.stringify(j) } catch {}
+    throw new Error(res.status + ' ' + res.statusText + (detail ? ' - ' + detail : ''))
+  }
   return res.json()
 }
 
@@ -168,7 +172,8 @@ window.addEventListener('hashchange', () => {
 function toCsv(headers, rows){
   const esc = (v) => String(v ?? '').replaceAll('"', '""')
   const line = (r) => r.map(v => `"${esc(v)}"`).join(',')
-  return [headers.join(','), ...rows.map(line)].join('\n')
+  return [headers.join(','), ...rows.map(line)].join('
+')
 }
 
 function runTests(){
@@ -177,7 +182,8 @@ function runTests(){
   // Test 1: líneas esperadas (header + 2 filas)
   const h = ['a','b']; const r = [[1,2],[3,4]]
   const csv1 = toCsv(h, r)
-  ok('líneas 3', csv1.split('\n').length === 3)
+  ok('líneas 3', csv1.split('
+').length === 3)
   // Test 2: coma interna debe ir entre comillas
   const csv2 = toCsv(['x'], [["a,b"]])
   ok('coma en campo', csv2.includes('"a,b"'))
@@ -193,6 +199,18 @@ function runTests(){
   const badge = els('testsBadge'); if (badge) badge.textContent = 'Tests: ' + (passAll ? 'OK' : 'FALLA')
 }
 
+// --- Utils de mapeo de campos ---
+const pick = (obj, keys, fallback='') => {
+  for (const k of keys) if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k]
+  return fallback
+}
+const fmtDate = (v) => {
+  const s = String(v ?? '')
+  if (!s) return ''
+  // soporta 'YYYY-MM-DD' o timestamptz 'YYYY-MM-DDTHH:mm:ssZ'
+  return s.includes('T') ? s.slice(0,10) : s
+}
+
 // --- Gestión FULL ---
 let fullRows = []
 function setDefaultDates(){
@@ -202,8 +220,13 @@ function renderFullTable(rows){
   const tb = document.querySelector('#fullTable tbody')
   tb.innerHTML = ''
   rows.slice(0,1000).forEach(r => {
+    const itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
+    const title  = pick(r, ['title','item_title','name'])
+    const invId  = pick(r, ['inventory_id','inventoryId'])
+    const qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
+    const date   = fmtDate(pick(r, ['date','created_at','updated_at']))
     const tr = document.createElement('tr')
-    tr.innerHTML = `<td>${r.item_id??''}</td><td>${r.item_title??''}</td><td>${r.inventory_id??''}</td><td>${r.quantity??r.qty??''}</td><td>${r.date??''}</td>`
+    tr.innerHTML = `<td>${itemId}</td><td>${title}</td><td>${invId}</td><td>${qty}</td><td>${date}</td>`
     tb.appendChild(tr)
   })
   els('fullMeta').textContent = `Filas: ${rows.length}`
@@ -219,11 +242,14 @@ async function loadFull(){
 function applyFullFilter(){
   const q = els('filterFull').value.trim().toLowerCase()
   if (!q) return renderFullTable(fullRows)
-  const f = fullRows.filter(r => (r.item_id||'').toLowerCase().includes(q) || (r.item_title||'').toLowerCase().includes(q))
+  const f = fullRows.filter(r =>
+    (String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase().includes(q)) ||
+    (String(pick(r,['title','item_title','name'],'')).toLowerCase().includes(q))
+  )
   renderFullTable(f)
 }
 function exportCsv(){
-  const headers = ['item_id','item_title','inventory_id','qty','date']
+  const headers = ['item_id','title','inventory_id','qty','date']
   const rows = Array.from(document.querySelectorAll('#fullTable tbody tr')).map(tr => Array.from(tr.children).map(td => td.textContent || ''))
   const csv = toCsv(headers, rows)
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
