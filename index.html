@@ -35,6 +35,14 @@
     .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#16202a; border:1px solid #2a3440; font-size:12px; color:#aeb6bf; }
     .config { padding:12px 16px; border-top:1px solid #22262b; display:none; }
     .config.show { display:block; }
+
+.dot { display:inline-block; width:10px; height:10px; border-radius:50%; }
+.dot.ok { background:#22c55e; }
+.dot.warn { background:#eab308; }
+.dot.risk { background:#ef4444; }
+.dot.near { background:#f97316; }
+
+    
   </style>
 </head>
 <body>
@@ -67,14 +75,13 @@
 
     <!-- INICIO -->
     <section id="view-home" class="view active">
-      <div class="grid menu-grid">
-        <div class="tile">
-          <h3>Gestion Full</h3>
-          <p>Stock total Full.</p>
-          <div class="row">
-            <button class="btn primary" id="goGestionFull">Abrir módulo</button>
-          </div>
-        </div>
+     <div class="tile">
+<h3>Full – Decisiones</h3>
+<p>Stock + conversión + semáforos.</p>
+<div class="row">
+<button class="btn primary" id="goFullDecisions">Abrir</button>
+</div>
+</div>
       </div>
     </section>
 
@@ -110,6 +117,58 @@
     </section>
   </main>
 
+
+
+  <!-- FULL – DECISIONES -->
+<section id="view-full-decisions" class="view">
+<div class="card" style="margin-bottom:14px;">
+<div class="topbar">
+<button class="btn" id="backHome2">← Volver</button>
+<div class="field" style="min-width:140px;">
+<label for="decWindow">Ventana (días)</label>
+<select id="decWindow">
+<option value="30" selected>30</option>
+<option value="60">60</option>
+</select>
+</div>
+<div class="field" style="min-width:140px;">
+<label for="decLeadTime">Lead time (días)</label>
+<input id="decLeadTime" type="number" min="1" value="7" />
+</div>
+<button class="btn primary" id="loadDecisions">Cargar</button>
+<span class="badge" id="decMeta">Filas: 0</span>
+</div>
+</div>
+
+
+<div class="card">
+<div style="overflow:auto;">
+<table class="table" id="decTable">
+<thead>
+<tr>
+<th data-k="overall_flag">⚑</th>
+<th data-k="item_id">Item</th>
+<th data-k="title">Título</th>
+<th data-k="stock_full">Stock</th>
+<th data-k="ventas_nd">Ventas</th>
+<th data-k="visitas_nd">Visitas</th>
+<th data-k="conv_nd">%Conv</th>
+<th data-k="demanda_diaria">Demanda/día</th>
+<th data-k="days_coverage">Cobertura (días)</th>
+<th data-k="break_date">Quiebre</th>
+<th data-k="stock_flag">Semáforo Stock</th>
+<th data-k="storage_flag">Semáforo Almacén</th>
+<th data-k="suggested_send">Sugerido</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+</section>
+
+
+  
   <!-- JS -->
   <script>
   // Fallback global: mostrar errores JS en el badge
@@ -274,6 +333,69 @@
 }
 
 
+// ===== Full – Decisiones (frontend) =====
+var k = decSortKey, dir = (decSortDir==='asc'?1:-1)
+var va = a[k], vb = b[k]
+if (va==null && vb==null) return 0
+if (va==null) return 1*dir
+if (vb==null) return -1*dir
+if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb)*dir
+va = Number(va); vb = Number(vb)
+if (!isFinite(va) || !isFinite(vb)) return String(a[k]).localeCompare(String(b[k]))*dir
+return (va>vb?1:va<vb?-1:0)*dir
+})
+
+
+for (var i=0; i<Math.min(arr.length, 1000); i++){
+var r = arr[i]
+var convPct = Math.round(((r.conv_nd||0)*100)*100)/100 // 2 decimales
+var cov = (r.days_coverage!=null) ? (Math.round(r.days_coverage*10)/10) : '∞'
+var tr = document.createElement('tr')
+tr.innerHTML =
+'<td>'+colorDot(r.overall_flag||r.stock_flag)+'</td>'+
+'<td>'+String(r.item_id||'')+'</td>'+
+'<td>'+String(r.title||'')+'</td>'+
+'<td>'+Number(r.stock_full||0)+'</td>'+
+'<td>'+Number(r.ventas_nd||0)+'</td>'+
+'<td>'+Number(r.visitas_nd||0)+'</td>'+
+'<td>'+convPct+'%'+ '</td>'+
+'<td>'+ (r.demanda_diaria? (Math.round(r.demanda_diaria*100)/100) : '0') +'</td>'+
+'<td>'+ cov +'</td>'+
+'<td>'+ (r.break_date||'') +'</td>'+
+'<td>'+colorDot(r.stock_flag)+'</td>'+
+'<td>'+colorDot(r.storage_flag)+'</td>'+
+'<td>'+Number(r.suggested_send||0)+'</td>'
+tb.appendChild(tr)
+}
+var meta = document.getElementById('decMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
+}
+
+
+function loadDecisions(){
+var wEl = document.getElementById('decWindow');
+var lEl = document.getElementById('decLeadTime');
+var w = wEl? Number(wEl.value||30) : 30
+var lt = lEl? Number(lEl.value||7) : 7
+apiGet('/full/decisions?window='+w+'&lead_time='+lt)
+.then(function(data){ decRows = (data.items||[]); renderDecisions(decRows) })
+.catch(function(e){ alert('Error decisiones: ' + (e && e.message ? e.message : e)) })
+}
+
+
+// Sorting por click en encabezado
+(function setupDecSort(){
+var thead = document.querySelector('#decTable thead');
+if (!thead) return;
+thead.addEventListener('click', function(ev){
+var th = ev.target.closest('th'); if(!th) return;
+var k = th.getAttribute('data-k'); if(!k) return;
+if (decSortKey === k) decSortDir = (decSortDir==='asc' ? 'desc' : 'asc');
+else { decSortKey = k; decSortDir = 'asc'; }
+renderDecisions(decRows)
+})
+})();
+      
+
       // Bind de eventos
       function bind(id, fn){ var node = el(id); if(node) node.onclick = function(){ try{ fn() }catch(e){ alert('Error '+id+': '+e.message) } }; }
       bind('btnHome', function(){ showView('view-home') })
@@ -284,6 +406,9 @@ bind('saveCfg', function(){ saveCfgFromUI(); alert('Guardado') })
 bind('goGestionFull', function(){ showView('view-gestion-full') })
 bind('backHome', function(){ showView('view-home') })
 bind('loadFull', loadFull)
+    bind('goFullDecisions', function(){ showView('view-full-decisions') })
+bind('backHome2', function(){ showView('view-home') })
+bind('loadDecisions', loadDecisions)
 
 var f = el('filterFull'); if (f) f.oninput = applyFullFilter
 
