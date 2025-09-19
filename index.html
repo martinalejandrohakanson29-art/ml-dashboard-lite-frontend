@@ -222,24 +222,25 @@
         }
         var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
       }
-    function loadFull(){
+ function loadFull(){
   try {
-    // Si querés, podés dejar el date como está; el backend ya lo ignora.
     apiGet('/stock/full').then(function(data){
-      // 🔧 Normalizamos las claves para que siempre existan y sean string
+      // Normalizamos claves/formatos para que el filtro funcione bien
       fullRows = (data.rows || []).map(function(r){
         return {
-          inventory_id: String(pick(r, ['inventory_id','inventoryId'], '')), // <- fuerza string
+          inventory_id: String(pick(r, ['inventory_id','inventoryId'], '')),
           item_id:      String(pick(r, ['item_id','itemId','ml_item_id','ml_id'], '')),
           title:        String(pick(r, ['title','item_title','name'], '')),
           qty:          pick(r, ['qty','available_quantity','available','total'], 0),
-          date:         pick(r, ['date','created_at','updated_at'], null)
+          date:         pick(r, ['date','created_at','updated_at'], null) // podés mostrarlo o no
         }
       })
       renderFullTable(fullRows)
     }).catch(function(e){ alert('Error stock Full: ' + e.message) })
   } catch(e){ alert('Error stock Full: ' + e.message) }
 }
+
+
 
   function applyFullFilter(){
   var inp = el('filterFull'); 
@@ -291,19 +292,21 @@
       // Bind de eventos
       function bind(id, fn){ var node = el(id); if(node) node.onclick = function(){ try{ fn() }catch(e){ alert('Error '+id+': '+e.message) } }; }
       bind('btnHome', function(){ showView('view-home') })
-      bind('btnConfig', function(){ var p=document.getElementById('configPanel'); if(p) p.classList.toggle('show') })
-      bind('saveCfg', function(){ saveCfgFromUI(); alert('Guardado') })
-      bind('goGestionFull', function(){ showView('view-gestion-full') })
-      bind('backHome', function(){ showView('view-home') })
-      bind('loadFull', loadFull)
-      var f = el('filterFull'); if (f) f.oninput = applyFullFilter
-      bind('exportCsv', exportCsv)
+bind('btnConfig', function(){
+  var p=document.getElementById('configPanel'); if(p) p.classList.toggle('show')
+})
+bind('saveCfg', function(){ saveCfgFromUI(); alert('Guardado') })
+bind('goGestionFull', function(){ showView('view-gestion-full') })
+bind('backHome', function(){ showView('view-home') })
+bind('loadFull', loadFull)
 
-      // Init
-      loadCfgIntoUI(); setDefaultDates(); runTests();
-      var s = document.getElementById('jsStatus'); if(s) s.textContent='JS: OK'
-      var t = document.getElementById('btnTestJs'); if(t) t.onclick=function(){ alert('JS funciona') }
-      console.log('[init] UI lista')
+var f = el('filterFull'); if (f) f.oninput = applyFullFilter
+
+// Init
+loadCfgIntoUI(); runTests(); // <-- quitamos setDefaultDates()
+var s = document.getElementById('jsStatus'); if(s) s.textContent='JS: OK'
+var t = document.getElementById('btnTestJs'); if(t) t.onclick=function(){ alert('JS funciona') }
+
 
     } catch (e) {
       console.error('[fatal] init error', e)
