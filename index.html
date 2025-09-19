@@ -205,22 +205,28 @@
       // Gestión FULL
       var fullRows = []
       function setDefaultDates(){ var d=el('dateFull'); if(d){ var to = new Date(); d.value = to.toISOString().slice(0,10) } }
-      function renderFullTable(rows){
-        var tb = document.querySelector('#fullTable tbody'); if(!tb) return
-        tb.innerHTML = ''
-        for(var i=0;i<Math.min(rows.length,1000);i++){
-          var r = rows[i]
-          var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
-          var title  = pick(r, ['title','item_title','name'])
-          var invId  = pick(r, ['inventory_id','inventoryId'])
-          var qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
-          
-          var tr = document.createElement('tr')
-          tr.innerHTML = '<td>'+itemId+'</td><td>'+title+'</td><td>'+invId+'</td><td>'+qty+'</td><td>'+date+'</td>'
-          tb.appendChild(tr)
-        }
-        var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
-      }
+     function renderFullTable(rows){
+  var tb = document.querySelector('#fullTable tbody'); if(!tb) return
+  tb.innerHTML = ''
+  for(var i=0;i<Math.min(rows.length,1000);i++){
+    var r = rows[i]
+    var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
+    var title  = pick(r, ['title','item_title','name'])
+    var invId  = pick(r, ['inventory_id','inventoryId'])
+    var qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
+
+    var tr = document.createElement('tr')
+    // 👇 OJO: ahora SOLO 4 celdas (coincide con el <thead>)
+    tr.innerHTML =
+      '<td>'+itemId+'</td>'+
+      '<td>'+title+'</td>'+
+      '<td>'+invId+'</td>'+
+      '<td>'+qty+'</td>'
+    tb.appendChild(tr)
+  }
+  var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
+}
+
  function loadFull(){
   try {
     apiGet('/stock/full').then(function(data){
@@ -267,26 +273,6 @@
   renderFullTable(f);
 }
 
-
-      function exportCsv(){
-        var headers = ['item_id','title','inventory_id','qty','date']
-        var body = document.querySelector('#fullTable tbody')
-        var rows = []
-        if (body){
-          var trs = body.querySelectorAll('tr')
-          for(var i=0;i<trs.length;i++){
-            var tds = trs[i].children
-            var row = []
-            for(var j=0;j<tds.length;j++){ row.push(tds[j].textContent || '') }
-            rows.push(row)
-          }
-        }
-        var csv = toCsv(headers, rows)
-        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-        var url = URL.createObjectURL(blob)
-        var a = document.createElement('a'); a.href = url; a.download = 'full_stock_'+((el('dateFull') && el('dateFull').value) || 'snapshot')+'.csv'; a.click()
-        URL.revokeObjectURL(url)
-      }
 
       // Bind de eventos
       function bind(id, fn){ var node = el(id); if(node) node.onclick = function(){ try{ fn() }catch(e){ alert('Error '+id+': '+e.message) } }; }
