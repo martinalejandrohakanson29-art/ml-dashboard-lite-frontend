@@ -237,7 +237,7 @@
           item_id:      String(pick(r, ['item_id','itemId','ml_item_id','ml_id'], '')),
           title:        String(pick(r, ['title','item_title','name'], '')),
           qty:          pick(r, ['qty','available_quantity','available','total'], 0),
-          date:         pick(r, ['date','created_at','updated_at'], null) // podés mostrarlo o no
+        
         }
       })
       renderFullTable(fullRows)
