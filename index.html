@@ -74,16 +74,18 @@
     </section>
 
     <!-- INICIO -->
-    <section id="view-home" class="view active">
-     <div class="tile">
-<h3>Full – Decisiones</h3>
-<p>Stock + conversión + semáforos.</p>
-<div class="row">
-<button class="btn primary" id="goFullDecisions">Abrir</button>
-</div>
-</div>
+   <section id="view-home" class="view active">
+  <div class="grid menu-grid">
+    <div class="tile">
+      <h3>Full – Decisiones</h3>
+      <p>Stock + conversión + semáforos.</p>
+      <div class="row">
+        <button class="btn primary" id="goFullDecisions">Abrir</button>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
+
 
     <!-- GESTIÓN FULL -->
     <section id="view-gestion-full" class="view">
@@ -333,53 +335,86 @@
 }
 
 
+
+
 // ===== Full – Decisiones (frontend) =====
-var k = decSortKey, dir = (decSortDir==='asc'?1:-1)
-var va = a[k], vb = b[k]
-if (va==null && vb==null) return 0
-if (va==null) return 1*dir
-if (vb==null) return -1*dir
-if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb)*dir
-va = Number(va); vb = Number(vb)
-if (!isFinite(va) || !isFinite(vb)) return String(a[k]).localeCompare(String(b[k]))*dir
-return (va>vb?1:va<vb?-1:0)*dir
-})
+var decRows = [];
+var decSortKey = 'overall_flag';
+var decSortDir = 'asc';
 
-
-for (var i=0; i<Math.min(arr.length, 1000); i++){
-var r = arr[i]
-var convPct = Math.round(((r.conv_nd||0)*100)*100)/100 // 2 decimales
-var cov = (r.days_coverage!=null) ? (Math.round(r.days_coverage*10)/10) : '∞'
-var tr = document.createElement('tr')
-tr.innerHTML =
-'<td>'+colorDot(r.overall_flag||r.stock_flag)+'</td>'+
-'<td>'+String(r.item_id||'')+'</td>'+
-'<td>'+String(r.title||'')+'</td>'+
-'<td>'+Number(r.stock_full||0)+'</td>'+
-'<td>'+Number(r.ventas_nd||0)+'</td>'+
-'<td>'+Number(r.visitas_nd||0)+'</td>'+
-'<td>'+convPct+'%'+ '</td>'+
-'<td>'+ (r.demanda_diaria? (Math.round(r.demanda_diaria*100)/100) : '0') +'</td>'+
-'<td>'+ cov +'</td>'+
-'<td>'+ (r.break_date||'') +'</td>'+
-'<td>'+colorDot(r.stock_flag)+'</td>'+
-'<td>'+colorDot(r.storage_flag)+'</td>'+
-'<td>'+Number(r.suggested_send||0)+'</td>'
-tb.appendChild(tr)
-}
-var meta = document.getElementById('decMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
+function colorDot(flag){
+  var cls = 'ok';
+  if (flag === 'risk') cls = 'risk';
+  else if (flag === 'warn') cls = 'warn';
+  else if (flag === 'near') cls = 'near';
+  return '<span class="dot '+cls+'" title="'+(flag||'ok')+'"></span>';
 }
 
+function renderDecisions(rows){
+  var tb = document.querySelector('#decTable tbody'); if(!tb) return;
+  tb.innerHTML = '';
+  var arr = rows.slice();
+  arr.sort(function(a,b){
+    var k = decSortKey, dir = (decSortDir==='asc'?1:-1);
+    var va = a[k], vb = b[k];
+    if (va==null && vb==null) return 0;
+    if (va==null) return 1*dir;
+    if (vb==null) return -1*dir;
+    if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb)*dir;
+    va = Number(va); vb = Number(vb);
+    if (!isFinite(va) || !isFinite(vb)) return String(a[k]).localeCompare(String(b[k]))*dir;
+    return (va>vb?1:va<vb?-1:0)*dir;
+  });
+
+  for (var i=0; i<Math.min(arr.length, 1000); i++){
+    var r = arr[i];
+    var convPct = Math.round(((r.conv_nd||0)*100)*100)/100; // 2 decimales
+    var cov = (r.days_coverage!=null) ? (Math.round(r.days_coverage*10)/10) : '∞';
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+colorDot(r.overall_flag||r.stock_flag)+'</td>'+
+      '<td>'+String(r.item_id||'')+'</td>'+
+      '<td>'+String(r.title||'')+'</td>'+
+      '<td>'+Number(r.stock_full||0)+'</td>'+
+      '<td>'+Number(r.ventas_nd||0)+'</td>'+
+      '<td>'+Number(r.visitas_nd||0)+'</td>'+
+      '<td>'+convPct+'%'+ '</td>'+
+      '<td>'+ (r.demanda_diaria? (Math.round(r.demanda_diaria*100)/100) : '0') +'</td>'+
+      '<td>'+ cov +'</td>'+
+      '<td>'+ (r.break_date||'') +'</td>'+
+      '<td>'+colorDot(r.stock_flag)+'</td>'+
+      '<td>'+colorDot(r.storage_flag)+'</td>'+
+      '<td>'+Number(r.suggested_send||0)+'</td>';
+    tb.appendChild(tr);
+  }
+  var meta = document.getElementById('decMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length;
+}
 
 function loadDecisions(){
-var wEl = document.getElementById('decWindow');
-var lEl = document.getElementById('decLeadTime');
-var w = wEl? Number(wEl.value||30) : 30
-var lt = lEl? Number(lEl.value||7) : 7
-apiGet('/full/decisions?window='+w+'&lead_time='+lt)
-.then(function(data){ decRows = (data.items||[]); renderDecisions(decRows) })
-.catch(function(e){ alert('Error decisiones: ' + (e && e.message ? e.message : e)) })
+  var wEl = document.getElementById('decWindow');
+  var lEl = document.getElementById('decLeadTime');
+  var w   = wEl? Number(wEl.value||30) : 30;
+  var lt  = lEl? Number(lEl.value||7) : 7;
+  apiGet('/full/decisions?window='+w+'&lead_time='+lt)
+    .then(function(data){ decRows = (data.items||[]); renderDecisions(decRows); })
+    .catch(function(e){ alert('Error decisiones: ' + (e && e.message ? e.message : e)); });
 }
+
+// Sorting por click en encabezado
+(function setupDecSort(){
+  var thead = document.querySelector('#decTable thead');
+  if (!thead) return;
+  thead.addEventListener('click', function(ev){
+    var th = ev.target.closest('th'); if(!th) return;
+    var k = th.getAttribute('data-k'); if(!k) return;
+    if (decSortKey === k) decSortDir = (decSortDir==='asc' ? 'desc' : 'asc');
+    else { decSortKey = k; decSortDir = 'asc'; }
+    renderDecisions(decRows);
+  });
+})();
+
+
+      
 
 
 // Sorting por click en encabezado
