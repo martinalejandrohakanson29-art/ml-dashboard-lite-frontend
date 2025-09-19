@@ -236,18 +236,30 @@
           }).catch(function(e){ alert('Error stock Full: ' + e.message) })
         } catch(e){ alert('Error stock Full: ' + e.message) }
       }
-      function applyFullFilter(){
-        var inp = el('filterFull'); var q = (inp?inp.value:'').trim().toLowerCase()
-        if (!q) return renderFullTable(fullRows)
-        var f = []
-        for(var i=0;i<fullRows.length;i++){
-          var r = fullRows[i]
-          var id = String(pick(r,['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase()
-          var ti = String(pick(r,['title','item_title','name'],'')).toLowerCase()
-          if (id.indexOf(q)>=0 || ti.indexOf(q)>=0) f.push(r)
-        }
-        renderFullTable(f)
-      }
+   function applyFullFilter(){
+  var inp = el('filterFull'); 
+  var raw = (inp ? inp.value : '').trim().toLowerCase();
+  if (!raw) return renderFullTable(fullRows);
+
+  var tokens = raw.split(/\s+/); // separa por espacios
+  var f = [];
+  for (var i = 0; i < fullRows.length; i++) {
+    var r = fullRows[i];
+    var haystack = (
+      String(pick(r, ['item_id','itemId','ml_item_id','ml_id'],'')).toLowerCase() + ' ' +
+      String(pick(r, ['title','item_title','name'],'')).toLowerCase() + ' ' +
+      String(pick(r, ['inventory_id','inventoryId'],'')).toLowerCase()
+    );
+
+    var ok = true;
+    for (var t = 0; t < tokens.length; t++) {
+      if (haystack.indexOf(tokens[t]) < 0) { ok = false; break; }
+    }
+    if (ok) f.push(r);
+  }
+  renderFullTable(f);
+}
+
       function exportCsv(){
         var headers = ['item_id','title','inventory_id','qty','date']
         var body = document.querySelector('#fullTable tbody')
