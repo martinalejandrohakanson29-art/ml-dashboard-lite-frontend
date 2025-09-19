@@ -81,20 +81,15 @@
     <!-- GESTIÓN FULL -->
     <section id="view-gestion-full" class="view">
       <div class="card" style="margin-bottom:14px;">
-        <div class="topbar">
-          <button class="btn" id="backHome">← Volver</button>
-          <div class="field">
-            <label for="dateFull">Fecha</label>
-            <input id="dateFull" type="date" />
-          </div>
-          <div class="field">
-            <label for="filterFull">Filtro (item_id o título)</label>
-            <input id="filterFull" placeholder="MLA..., título..." />
-          </div>
-          <button class="btn primary" id="loadFull">Cargar</button>
-          <button class="btn" id="exportCsv">Exportar CSV</button>
-          <span class="badge" id="fullMeta">Filas: 0</span>
-        </div>
+       <div class="topbar">
+  <button class="btn" id="backHome">← Volver</button>
+  <div class="field" style="min-width:280px;">
+    <label for="filterFull">Filtro (item_id, título o inventory_id)</label>
+    <input id="filterFull" placeholder="MLA..., texto..., INV..." />
+  </div>
+  <button class="btn primary" id="loadFull">Cargar</button>
+  <span class="badge" id="fullMeta">Filas: 0</span>
+</div>
       </div>
 
       <div class="card">
