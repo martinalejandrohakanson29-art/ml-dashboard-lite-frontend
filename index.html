@@ -101,7 +101,6 @@
                 <th>title</th>
                 <th>inventory_id</th>
                 <th>qty</th>
-                <th>date</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -215,7 +214,7 @@
           var title  = pick(r, ['title','item_title','name'])
           var invId  = pick(r, ['inventory_id','inventoryId'])
           var qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
-          var date   = fmtDate(pick(r, ['date','created_at','updated_at']))
+          
           var tr = document.createElement('tr')
           tr.innerHTML = '<td>'+itemId+'</td><td>'+title+'</td><td>'+invId+'</td><td>'+qty+'</td><td>'+date+'</td>'
           tb.appendChild(tr)
