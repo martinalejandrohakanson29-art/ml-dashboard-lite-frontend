@@ -3,39 +3,81 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ML Dashboard Lite — Módulos</title>
+  <title>Módulos</title>
   <style>
     :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af}
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
-         background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);
-         min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-    .wrap{width:100%;max-width:900px}
-    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-    h1{font-size:clamp(1.3rem,2vw,1.8rem);margin:0}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    .btn{display:flex;align-items:center;justify-content:center;width:100%;padding:16px 18px;border-radius:12px;text-decoration:none;color:#0b1220;background:#f8fafc;font-weight:700;border:1px solid #e5e7eb;cursor:pointer}
-    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.25)}
-    .foot{margin-top:12px;color:var(--muted);font-size:.9rem}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+      background:linear-gradient(180deg,#0b1220,#0f172a);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .wrap{width:100%;max-width:720px}
+    /* columna en cascada */
+    .stack{display:flex;flex-direction:column;gap:12px}
+    /* tarjeta más chica */
+    .card{
+      background:var(--card);
+      border:1px solid #1f2937;
+      border-radius:14px;
+      padding:14px 16px;
+      box-shadow:0 8px 22px rgba(0,0,0,.25);
+    }
+    .title{
+      margin:0 0 6px 0;
+      font-size:1.05rem;
+      line-height:1.2;
+    }
+    .desc{
+      margin:0 0 10px 0;
+      color:var(--muted);
+      font-size:.92rem;
+      line-height:1.3;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 14px;
+      border-radius:10px;
+      text-decoration:none;
+      color:#0b1220;
+      background:#f8fafc;
+      font-weight:700;
+      border:1px solid #e5e7eb;
+      cursor:pointer;
+      font-size:.95rem;
+    }
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    /* contenedor centrado y sin encabezado, todo foco en los módulos */
+    .header-spacer{height:6px}
+    @media (max-width:420px){
+      .wrap{max-width:100%}
+    }
   </style>
 </head>
 <body>
   <main class="wrap">
-    <div class="header">
-      <h1>ML Dashboard Lite — Módulos</h1>
-      <div class="foot">v0.1</div>
-    </div>
-    <section class="grid">
+    <div class="header-spacer"></div>
+    <section class="stack">
+      <!-- Módulo 1 -->
       <div class="card">
-        <h2 style="margin-top:0">MercadoLibre Full</h2>
-        <p class="foot">Stock, ventas, visitas, alertas.</p>
-        <a class="btn" href="#" aria-disabled="true"><span>Entrar</span></a>
+        <h2 class="title">MercadoLibre Full</h2>
+        <p class="desc">Stock, ventas, visitas y alertas de reposición.</p>
+        <a class="btn" href="full.html">Entrar</a>
       </div>
+
+      <!-- Módulo 2 -->
       <div class="card">
-        <h2 style="margin-top:0">Envíos Andreani</h2>
-        <p class="foot">Cotizaciones, etiquetas, seguimiento.</p>
-        <a class="btn" href="#" aria-disabled="true"><span>Entrar</span></a>
+        <h2 class="title">Envíos Andreani</h2>
+        <p class="desc">Cotizaciones, etiquetas y seguimiento de envíos.</p>
+        <a class="btn" href="andreani.html">Entrar</a>
       </div>
     </section>
   </main>
