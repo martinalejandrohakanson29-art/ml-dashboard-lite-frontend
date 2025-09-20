@@ -14,7 +14,6 @@
     label{display:block;font-size:.9rem;margin:8px 0 4px;color:var(--muted)}
     input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #263043;background:#0f172a;color:var(--text)}
     .row{display:grid;grid-template-columns:1fr 220px;gap:10px}
-    .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
     .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:10px;text-decoration:none;
       color:#0b122a;background:#f8fafc;border:1px solid #e5e7eb;font-weight:700;cursor:pointer}
     .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
@@ -27,6 +26,7 @@
     .ok{color:#86efac}
     .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .back{font-size:.9rem}
+    /* título en una sola línea y bien ancho */
     .col-title{ white-space:nowrap; width:60%; min-width:520px }
   </style>
 </head>
@@ -37,27 +37,37 @@
       <div class="muted">Módulo: MercadoLibre Full</div>
     </div>
 
-    <!-- Config -->
+    <!-- Config (restaurada) -->
     <section class="card">
-  <h1>Acciones</h1>
-  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-    <button class="btn" id="btnLoad">Cargar stock FULL</button>
+      <h1>Config</h1>
+      <div class="row">
+        <div>
+          <label>API Base URL (tu backend en Render)</label>
+          <input id="apiUrl" placeholder="https://tu-backend.onrender.com" />
+        </div>
+        <div>
+          <label>Token (Bearer = API_SECRET)</label>
+          <input id="apiToken" placeholder="pegá el API_SECRET" />
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px">
+        <button class="btn" id="btnSave">Guardar</button>
+        <button class="btn" id="btnProbe">Probar conexión</button>
+        <span id="probeMsg" class="status muted"></span>
+      </div>
+    </section>
 
-    <!-- NUEVO: buscador -->
-    <input id="q" placeholder="Buscar en todas las columnas..."
-           style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
-                  border:1px solid #263043; background:#0f172a; color:var(--text)" />
-
-    <span id="loadMsg" class="status muted"></span>
-  </div>
-</section>
-
-
-    <!-- Acciones -->
+    <!-- Acciones (una sola) -->
     <section class="card">
       <h1>Acciones</h1>
-      <div style="display:flex; gap:10px">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
         <button class="btn" id="btnLoad">Cargar stock FULL</button>
+
+        <!-- Buscador -->
+        <input id="q" placeholder="Buscar en todas las columnas..."
+               style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
+                      border:1px solid #263043; background:#0f172a; color:var(--text)" />
+
         <span id="loadMsg" class="status muted"></span>
       </div>
     </section>
@@ -73,150 +83,103 @@
     const $ = (q) => document.querySelector(q);
     const LS_KEY = 'ml_full_cfg';
 
-let fullRows = []; // guardamos todas las filas para poder filtrar
-
-// columnas que no contamos para el filtro (ya están ocultas en la tabla)
-const hiddenCols = ['available_quantity','created_date_utc','created_at','updated_at'];
-
-function getQuery(){
-  const el = $('#q');
-  return el ? el.value.trim().toLowerCase() : '';
-}
-
-function filterRows(rows){
-  const q = getQuery();
-  if(!q) return rows;
-  return rows.filter(obj =>
-    Object.entries(obj).some(([k, v]) => {
-      if (hiddenCols.includes(k)) return false;     // no filtra por columnas ocultas
-      if (v === null || v === undefined) return false;
-      return String(v).toLowerCase().includes(q);   // match parcial en cualquier columna visible
-    })
-  );
-}
-
-    
-    function getCfg(){
-      try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
-      catch(_){ return {}; }
+    // --- filtro/buscador ---
+    let fullRows = [];
+    const hiddenCols = ['available_quantity','created_date_utc','created_at','updated_at'];
+    function getQuery(){ const el = $('#q'); return el ? el.value.trim().toLowerCase() : ''; }
+    function filterRows(rows){
+      const q = getQuery(); if(!q) return rows;
+      return rows.filter(obj =>
+        Object.entries(obj).some(([k, v]) => {
+          if (hiddenCols.includes(k)) return false;
+          if (v == null) return false;
+          return String(v).toLowerCase().includes(q);
+        })
+      );
     }
+
+    // --- cfg + fetch ---
+    function getCfg(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(_){ return {}; } }
     function setCfg(cfg){ localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }
-
-    function readInputs(){
-      return { url: $('#apiUrl').value.trim(), token: $('#apiToken').value.trim() };
-    }
-    function writeInputs(cfg){
-      $('#apiUrl').value = cfg.url || '';
-      $('#apiToken').value = cfg.token || '';
-    }
+    function readInputs(){ return { url: $('#apiUrl').value.trim(), token: $('#apiToken').value.trim() }; }
+    function writeInputs(cfg){ $('#apiUrl').value = cfg.url || ''; $('#apiToken').value = cfg.token || ''; }
 
     async function apiFetch(path){
       const { url, token } = getCfg();
       if(!url) throw new Error('Falta API Base URL');
-      const res = await fetch(url.replace(/\/+$/,'') + path, {
-        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-      });
+      const res = await fetch(url.replace(/\/+$/,'') + path, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
       const data = await res.json().catch(()=> ({}));
-      if(!res.ok || data.ok === false){
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      if(!res.ok || data.ok === false){ throw new Error(data.error || `HTTP ${res.status}`); }
       return data;
     }
 
+    // --- tabla ---
+    function renderTable(rows){
+      const wrap = $('#tableWrap');
+      if(!rows || !rows.length){ wrap.innerHTML = '<span class="muted">Sin filas.</span>'; return; }
 
-function renderTable(rows){
-    const wrap = $('#tableWrap');
-    if(!rows || !rows.length){
-      wrap.innerHTML = '<span class="muted">Sin filas.</span>';
-      return;
-    }
+      const hidden = new Set(['available_quantity','created_date_utc','created_at','updated_at']);
+      const rename = { not_available_quantity: 'pausados' };
 
-    // Columnas a ocultar
-    const hidden = new Set(['available_quantity','created_date_utc','created_at','updated_at']);
+      const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
+      const preferred = ['title','total','not_available_quantity'];
+      const rest = all.filter(c => !preferred.includes(c));
+      const cols = [...preferred.filter(c => all.includes(c)), ...rest];
 
-    // Renombres para el header
-    const rename = { not_available_quantity: 'pausados' };
-
-    // Armamos columnas: preferimos un orden básico y luego el resto
-    const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
-    const preferred = ['title','total','not_available_quantity'];
-    const rest = all.filter(c => !preferred.includes(c));
-    const cols = [...preferred.filter(c => all.includes(c)), ...rest];
-
-    let html = '<div style="overflow:auto"><table><thead><tr>';
-    html += cols.map(c => {
-      const cls = (c === 'title') ? ' class="col-title"' : '';
-      const label = rename[c] || c;
-      return `<th${cls}>${label}</th>`;
-    }).join('');
-    html += '</tr></thead><tbody>';
-
-    for(const r of rows){
-      html += '<tr>' + cols.map(c => {
+      let html = '<div style="overflow:auto"><table><thead><tr>';
+      html += cols.map(c => {
         const cls = (c === 'title') ? ' class="col-title"' : '';
-        return `<td${cls}>${safe(r[c])}</td>`;
-      }).join('') + '</tr>';
+        const label = rename[c] || c;
+        return `<th${cls}>${label}</th>`;
+      }).join('');
+      html += '</tr></thead><tbody>';
+
+      for(const r of rows){
+        html += '<tr>' + cols.map(c => {
+          const cls = (c === 'title') ? ' class="col-title"' : '';
+          return `<td${cls}>${safe(r[c])}</td>`;
+        }).join('') + '</tr>';
+      }
+      html += '</tbody></table></div>';
+      wrap.innerHTML = html;
     }
 
-    html += '</tbody></table></div>';
-    wrap.innerHTML = html;
-  }
+    function safe(v){ if(v==null) return ''; if(typeof v === 'object') return JSON.stringify(v); return String(v); }
 
-    
-    function safe(v){
-      if(v===null || v===undefined) return '';
-      if(typeof v === 'object') return JSON.stringify(v);
-      return String(v);
-    }
-
-    // Eventos
+    // --- eventos ---
     $('#btnSave').addEventListener('click', ()=>{
-      const cfg = readInputs();
-      setCfg(cfg);
-      $('#probeMsg').textContent = 'Guardado.';
-      $('#probeMsg').className = 'status ok';
-      setTimeout(()=>{$('#probeMsg').textContent=''; $('#probeMsg').className='status muted';}, 1200);
+      const cfg = readInputs(); setCfg(cfg);
+      $('#probeMsg').textContent = 'Guardado.'; $('#probeMsg').className = 'status ok';
+      setTimeout(()=>{ $('#probeMsg').textContent=''; $('#probeMsg').className='status muted'; }, 1200);
     });
 
     $('#btnProbe').addEventListener('click', async ()=>{
-      const cfg = readInputs();
-      setCfg(cfg);
-      $('#probeMsg').textContent = 'Probando...';
-      $('#probeMsg').className = 'status';
+      const cfg = readInputs(); setCfg(cfg);
+      $('#probeMsg').textContent = 'Probando...'; $('#probeMsg').className = 'status';
       try{
-        const h = await apiFetch('/health');
-        const e = await apiFetch('/env-check');
+        const h = await apiFetch('/health'); const e = await apiFetch('/env-check');
         $('#probeMsg').textContent = `OK (uptime ${h.uptime_s}s, env: ${e.hasUrl?'URL':'-'} ${e.hasServiceRole?'SR':'-'} ${e.hasApiSecret?'TOK':'-'})`;
         $('#probeMsg').className = 'status ok';
       }catch(err){
-        $('#probeMsg').textContent = 'Error: ' + err.message;
-        $('#probeMsg').className = 'status error';
+        $('#probeMsg').textContent = 'Error: ' + err.message; $('#probeMsg').className = 'status error';
       }
     });
 
-    // al escribir en el buscador, filtramos y re-renderizamos
-$('#q').addEventListener('input', () => {
-  renderTable(filterRows(fullRows));
-});
+    $('#q').addEventListener('input', ()=>{ renderTable(filterRows(fullRows)); });
 
+    $('#btnLoad').addEventListener('click', async ()=>{
+      $('#loadMsg').textContent = 'Cargando...'; $('#loadMsg').className = 'status';
+      try{
+        const data = await apiFetch('/full/stock');
+        fullRows = data.rows || [];
+        renderTable(filterRows(fullRows));
+        $('#loadMsg').textContent = `Filas: ${fullRows.length}`; $('#loadMsg').className = 'status ok';
+      }catch(err){
+        $('#loadMsg').textContent = 'Error: ' + err.message; $('#loadMsg').className = 'status error';
+      }
+    });
 
-   $('#btnLoad').addEventListener('click', async ()=>{
-  $('#loadMsg').textContent = 'Cargando...';
-  $('#loadMsg').className = 'status';
-  try{
-    const data = await apiFetch('/full/stock');
-    fullRows = data.rows || [];                 // guardamos las filas crudas
-    renderTable(filterRows(fullRows));          // mostramos segun lo escrito en el buscador
-    $('#loadMsg').textContent = `Filas: ${fullRows.length}`;
-    $('#loadMsg').className = 'status ok';
-  }catch(err){
-    $('#loadMsg').textContent = 'Error: ' + err.message;
-    $('#loadMsg').className = 'status error';
-  }
-});
-
-
-    // Init
+    // init
     writeInputs(getCfg());
   </script>
 </body>
