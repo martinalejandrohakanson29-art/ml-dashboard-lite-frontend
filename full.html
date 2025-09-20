@@ -39,23 +39,19 @@
 
     <!-- Config -->
     <section class="card">
-      <h1>Config</h1>
-      <div class="row">
-        <div>
-          <label>API Base URL (tu backend en Render)</label>
-          <input id="apiUrl" placeholder="https://tu-backend.onrender.com" />
-        </div>
-        <div>
-          <label>Token (Bearer = API_SECRET)</label>
-          <input id="apiToken" placeholder="pegá el API_SECRET" />
-        </div>
-      </div>
-      <div style="display:flex; gap:10px; margin-top:10px">
-        <button class="btn" id="btnSave">Guardar</button>
-        <button class="btn" id="btnProbe">Probar conexión</button>
-        <span id="probeMsg" class="status muted"></span>
-      </div>
-    </section>
+  <h1>Acciones</h1>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+    <button class="btn" id="btnLoad">Cargar stock FULL</button>
+
+    <!-- NUEVO: buscador -->
+    <input id="q" placeholder="Buscar en todas las columnas..."
+           style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
+                  border:1px solid #263043; background:#0f172a; color:var(--text)" />
+
+    <span id="loadMsg" class="status muted"></span>
+  </div>
+</section>
+
 
     <!-- Acciones -->
     <section class="card">
@@ -77,6 +73,29 @@
     const $ = (q) => document.querySelector(q);
     const LS_KEY = 'ml_full_cfg';
 
+let fullRows = []; // guardamos todas las filas para poder filtrar
+
+// columnas que no contamos para el filtro (ya están ocultas en la tabla)
+const hiddenCols = ['available_quantity','created_date_utc','created_at','updated_at'];
+
+function getQuery(){
+  const el = $('#q');
+  return el ? el.value.trim().toLowerCase() : '';
+}
+
+function filterRows(rows){
+  const q = getQuery();
+  if(!q) return rows;
+  return rows.filter(obj =>
+    Object.entries(obj).some(([k, v]) => {
+      if (hiddenCols.includes(k)) return false;     // no filtra por columnas ocultas
+      if (v === null || v === undefined) return false;
+      return String(v).toLowerCase().includes(q);   // match parcial en cualquier columna visible
+    })
+  );
+}
+
+    
     function getCfg(){
       try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
       catch(_){ return {}; }
@@ -175,19 +194,27 @@ function renderTable(rows){
       }
     });
 
-    $('#btnLoad').addEventListener('click', async ()=>{
-      $('#loadMsg').textContent = 'Cargando...';
-      $('#loadMsg').className = 'status';
-      try{
-        const data = await apiFetch('/full/stock');
-        renderTable(data.rows || []);
-        $('#loadMsg').textContent = `Cantidad: ${(data.rows||[]).length}`;
-        $('#loadMsg').className = 'status ok';
-      }catch(err){
-        $('#loadMsg').textContent = 'Error: ' + err.message;
-        $('#loadMsg').className = 'status error';
-      }
-    });
+    // al escribir en el buscador, filtramos y re-renderizamos
+$('#q').addEventListener('input', () => {
+  renderTable(filterRows(fullRows));
+});
+
+
+   $('#btnLoad').addEventListener('click', async ()=>{
+  $('#loadMsg').textContent = 'Cargando...';
+  $('#loadMsg').className = 'status';
+  try{
+    const data = await apiFetch('/full/stock');
+    fullRows = data.rows || [];                 // guardamos las filas crudas
+    renderTable(filterRows(fullRows));          // mostramos segun lo escrito en el buscador
+    $('#loadMsg').textContent = `Filas: ${fullRows.length}`;
+    $('#loadMsg').className = 'status ok';
+  }catch(err){
+    $('#loadMsg').textContent = 'Error: ' + err.message;
+    $('#loadMsg').className = 'status error';
+  }
+});
+
 
     // Init
     writeInputs(getCfg());
