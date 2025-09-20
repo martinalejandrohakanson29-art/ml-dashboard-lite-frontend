@@ -109,7 +109,7 @@
                 <th>item_id</th>
                 <th>title</th>
                 <th>inventory_id</th>
-                <th>qty</th>
+               <th>stock</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -266,7 +266,7 @@
       // Gestión FULL
       var fullRows = []
       function setDefaultDates(){ var d=el('dateFull'); if(d){ var to = new Date(); d.value = to.toISOString().slice(0,10) } }
-     function renderFullTable(rows){
+   function renderFullTable(rows){
   var tb = document.querySelector('#fullTable tbody'); if(!tb) return
   tb.innerHTML = ''
   for(var i=0;i<Math.min(rows.length,1000);i++){
@@ -274,19 +274,19 @@
     var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
     var title  = pick(r, ['title','item_title','name'])
     var invId  = pick(r, ['inventory_id','inventoryId'])
-    var qty    = pick(r, ['available_quantity','qty','quantity','available_qty','available'])
 
     var tr = document.createElement('tr')
-    // 👇 OJO: ahora SOLO 4 celdas (coincide con el <thead>)
     tr.innerHTML =
       '<td>'+itemId+'</td>'+
       '<td>'+title+'</td>'+
       '<td>'+invId+'</td>'+
-      '<td>'+qty+'</td>'
+      // 👇 usar el campo normalizado 'stock' (numérico)
+      '<td>'+Number(r.stock||0)+'</td>'
     tb.appendChild(tr)
   }
   var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
 }
+
 
  function loadFull(){
   try {
