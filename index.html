@@ -291,17 +291,20 @@
  function loadFull(){
   try {
     apiGet('/stock/full').then(function(data){
-      // Normalizamos claves/formatos para que el filtro funcione bien
-      fullRows = (data.rows || []).map(function(r){
-        return {
-          inventory_id: String(pick(r, ['inventory_id','inventoryId'], '')),
-          item_id:      String(pick(r, ['item_id','itemId','ml_item_id','ml_id'], '')),
-          title:        String(pick(r, ['title','item_title','name'], '')),
-          qty:          pick(r, ['qty','available_quantity','available','total'], 0),
-        
-        }
-      })
-      renderFullTable(fullRows)
+    // Normalizamos claves/formatos para que el filtro funcione bien
+fullRows = (data.rows || []).map(function(r){
+  return {
+    inventory_id: String(pick(r, ['inventory_id','inventoryId'], '')),
+    item_id: String(pick(r, ['item_id','itemId','ml_item_id','ml_id'], '')).trim().toUpperCase(),
+    title:        String(pick(r, ['title','item_title','name'], '')),
+
+    // 👇 clave: usar 'stock' y castear a número. Priorizar 'total'.
+    stock: Number(pick(r, ['total','available_quantity','available','qty','stock'], 0)) || 0,
+  }
+})
+
+renderFullTable(fullRows)
+
     }).catch(function(e){ alert('Error stock Full: ' + e.message) })
   } catch(e){ alert('Error stock Full: ' + e.message) }
 }
