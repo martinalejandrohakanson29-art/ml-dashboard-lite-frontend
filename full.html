@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MercadoLibre Full — Stock</title>
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--line:#1f2937}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+      background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);min-height:100vh}
+    .wrap{max-width:1100px;margin:0 auto;padding:20px}
+    .card{background:#111827;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 8px 22px rgba(0,0,0,.25);margin-bottom:14px}
+    h1{margin:0 0 10px 0;font-size:1.1rem}
+    label{display:block;font-size:.9rem;margin:8px 0 4px;color:var(--muted)}
+    input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #263043;background:#0f172a;color:var(--text)}
+    .row{display:grid;grid-template-columns:1fr 220px;gap:10px}
+    .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:10px;text-decoration:none;
+      color:#0b122a;background:#f8fafc;border:1px solid #e5e7eb;font-weight:700;cursor:pointer}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    .muted{color:var(--muted);font-size:.9rem}
+    table{width:100%;border-collapse:collapse;border-spacing:0;font-size:.92rem}
+    th, td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{font-weight:700}
+    .status{margin-left:8px;font-size:.9rem}
+    .error{color:#fca5a5}
+    .ok{color:#86efac}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .back{font-size:.9rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a class="back btn" href="index.html">← Volver</a>
+      <div class="muted">Módulo: MercadoLibre Full</div>
+    </div>
+
+    <!-- Config -->
+    <section class="card">
+      <h1>Config</h1>
+      <div class="row">
+        <div>
+          <label>API Base URL (tu backend en Render)</label>
+          <input id="apiUrl" placeholder="https://tu-backend.onrender.com" />
+        </div>
+        <div>
+          <label>Token (Bearer = API_SECRET)</label>
+          <input id="apiToken" placeholder="pegá el API_SECRET" />
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px">
+        <button class="btn" id="btnSave">Guardar</button>
+        <button class="btn" id="btnProbe">Probar conexión</button>
+        <span id="probeMsg" class="status muted"></span>
+      </div>
+    </section>
+
+    <!-- Acciones -->
+    <section class="card">
+      <h1>Acciones</h1>
+      <div style="display:flex; gap:10px">
+        <button class="btn" id="btnLoad">Cargar stock FULL</button>
+        <span id="loadMsg" class="status muted"></span>
+      </div>
+    </section>
+
+    <!-- Tabla -->
+    <section class="card">
+      <h1>Tabla: full_stock_min</h1>
+      <div id="tableWrap" class="muted">Sin datos aún.</div>
+    </section>
+  </div>
+
+  <script>
+    const $ = (q) => document.querySelector(q);
+    const LS_KEY = 'ml_full_cfg';
+
+    function getCfg(){
+      try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
+      catch(_){ return {}; }
+    }
+    function setCfg(cfg){ localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }
+
+    function readInputs(){
+      return { url: $('#apiUrl').value.trim(), token: $('#apiToken').value.trim() };
+    }
+    function writeInputs(cfg){
+      $('#apiUrl').value = cfg.url || '';
+      $('#apiToken').value = cfg.token || '';
+    }
+
+    async function apiFetch(path){
+      const { url, token } = getCfg();
+      if(!url) throw new Error('Falta API Base URL');
+      const res = await fetch(url.replace(/\/+$/,'') + path, {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json().catch(()=> ({}));
+      if(!res.ok || data.ok === false){
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    function renderTable(rows){
+      const wrap = $('#tableWrap');
+      if(!rows || !rows.length){
+        wrap.innerHTML = '<span class="muted">Sin filas.</span>';
+        return;
+      }
+      const cols = Object.keys(rows[0]); // columnas dinámicas
+      let html = '<div style="overflow:auto"><table><thead><tr>';
+      html += cols.map(c=>`<th>${c}</th>`).join('');
+      html += '</tr></thead><tbody>';
+      for(const r of rows){
+        html += '<tr>' + cols.map(c=>`<td>${safe(r[c])}</td>`).join('') + '</tr>';
+      }
+      html += '</tbody></table></div>';
+      wrap.innerHTML = html;
+    }
+
+    function safe(v){
+      if(v===null || v===undefined) return '';
+      if(typeof v === 'object') return JSON.stringify(v);
+      return String(v);
+    }
+
+    // Eventos
+    $('#btnSave').addEventListener('click', ()=>{
+      const cfg = readInputs();
+      setCfg(cfg);
+      $('#probeMsg').textContent = 'Guardado.';
+      $('#probeMsg').className = 'status ok';
+      setTimeout(()=>{$('#probeMsg').textContent=''; $('#probeMsg').className='status muted';}, 1200);
+    });
+
+    $('#btnProbe').addEventListener('click', async ()=>{
+      const cfg = readInputs();
+      setCfg(cfg);
+      $('#probeMsg').textContent = 'Probando...';
+      $('#probeMsg').className = 'status';
+      try{
+        const h = await apiFetch('/health');
+        const e = await apiFetch('/env-check');
+        $('#probeMsg').textContent = `OK (uptime ${h.uptime_s}s, env: ${e.hasUrl?'URL':'-'} ${e.hasServiceRole?'SR':'-'} ${e.hasApiSecret?'TOK':'-'})`;
+        $('#probeMsg').className = 'status ok';
+      }catch(err){
+        $('#probeMsg').textContent = 'Error: ' + err.message;
+        $('#probeMsg').className = 'status error';
+      }
+    });
+
+    $('#btnLoad').addEventListener('click', async ()=>{
+      $('#loadMsg').textContent = 'Cargando...';
+      $('#loadMsg').className = 'status';
+      try{
+        const data = await apiFetch('/full/stock');
+        renderTable(data.rows || []);
+        $('#loadMsg').textContent = `Filas: ${(data.rows||[]).length}`;
+        $('#loadMsg').className = 'status ok';
+      }catch(err){
+        $('#loadMsg').textContent = 'Error: ' + err.message;
+        $('#loadMsg').className = 'status error';
+      }
+    });
+
+    // Init
+    writeInputs(getCfg());
+  </script>
+</body>
+</html>
