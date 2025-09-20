@@ -271,6 +271,8 @@
   tb.innerHTML = ''
   for(var i=0;i<Math.min(rows.length,1000);i++){
     var r = rows[i]
+     // 🔎 LOG 2: lo que llega al render
+    if (i < 3) console.log('render row', i, r);
     var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
     var title  = pick(r, ['title','item_title','name'])
     var invId  = pick(r, ['inventory_id','inventoryId'])
@@ -303,6 +305,13 @@ fullRows = (data.rows || []).map(function(r){
   }
 })
 
+// 🔎 LOG 1: cómo viene del back (crudo) y cómo quedó mapeado
+console.log('raw row 0:', (data.rows||[])[0]);
+console.log('mapped row 0:', fullRows[0]);
+console.log('mapped first 3:', fullRows.slice(0,3));
+
+renderFullTable(fullRows);
+      
 renderFullTable(fullRows)
 
     }).catch(function(e){ alert('Error stock Full: ' + e.message) })
