@@ -355,7 +355,7 @@
 
 // ===== Full – Decisiones (frontend) =====
 var decRows = [];
-var decSortKey = 'overall_flag';
+var decSortKey = 'days_coverage';
 var decSortDir = 'asc';
 
 function colorDot(flag){
@@ -405,39 +405,54 @@ function renderDecisions(rows){
   }
   var meta = document.getElementById('decMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length;
 }
-
 function loadDecisions(){
   console.log('[dec] loadDecisions()');
   apiGet('/full/decisions?window=30&lead_time=7')
     .then(function(data){
       console.log('[dec] status OK, items crudos:', data.items && data.items.slice(0,3));
-      // NO renombrar keys; solo normalizamos números
+
+      // Mapeo a las keys que espera renderDecisions:
       var rows = (data.items || []).map(function(it){
         return {
+          // identidades
           item_id:       String(it.item_id || ''),
           title:         String(it.title || ''),
           inventory_id:  String(it.inventory_id || ''),
-          stock:         Number(it.stock || 0),
-          sales:         Number(it.sales || 0),
-          visits:        Number(it.visits || 0),
-          conv:          Number(it.conv || 0),                 // proporción 0..1
-          demand_per_day:Number(it.demand_per_day || 0),
-          coverage_days: Number(isFinite(it.coverage_days) ? it.coverage_days : 0),
-          window_days:   Number(it.window_days || 0),
-          lead_time_days:Number(it.lead_time_days || 0),
-          from:          String(it.from || ''),
-          to:            String(it.to || ''),
-        }
+
+          // 👇 keys que la tabla usa hoy:
+          stock_full:        Number(it.stock || 0),
+          ventas_nd:         Number(it.sales || 0),
+          visitas_nd:        Number(it.visits || 0),
+          conv_nd:           Number(it.conv || 0),              // 0..1
+          demanda_diaria:    Number(it.demand_per_day || 0),
+          days_coverage:     (isFinite(it.coverage_days) ? Number(it.coverage_days) : null),
+          break_date:        String(it.break_date || ''),
+
+          // flags opcionales (si no los manda el back, quedan vacíos)
+          overall_flag:      it.overall_flag || '',
+          stock_flag:        it.stock_flag || '',
+          storage_flag:      it.storage_flag || '',
+
+          // extras por si querés mostrarlos en algún lado
+          window_days:       Number(it.window_days || 0),
+          lead_time_days:    Number(it.lead_time_days || 0),
+          from:              String(it.from || ''),
+          to:                String(it.to || ''),
+        };
       });
 
       console.log('[dec] mapeadas 3 primeras:', rows.slice(0,3));
-      renderDecisionsTable(rows);
+
+      // Importante: setear decRows (lo usa el sorter) y llamar a renderDecisions
+      decRows = rows;
+      renderDecisions(decRows);
     })
     .catch(function(e){
       console.error('[dec] Error decisiones:', e);
       alert('Error decisiones: ' + e.message);
     });
 }
+
 
 
 // Sorting por click en encabezado
