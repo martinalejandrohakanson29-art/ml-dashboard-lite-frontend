@@ -407,14 +407,38 @@ function renderDecisions(rows){
 }
 
 function loadDecisions(){
-  var wEl = document.getElementById('decWindow');
-  var lEl = document.getElementById('decLeadTime');
-  var w   = wEl? Number(wEl.value||30) : 30;
-  var lt  = lEl? Number(lEl.value||7) : 7;
-  apiGet('/full/decisions?window='+w+'&lead_time='+lt)
-    .then(function(data){ decRows = (data.items||[]); renderDecisions(decRows); })
-    .catch(function(e){ alert('Error decisiones: ' + (e && e.message ? e.message : e)); });
+  console.log('[dec] loadDecisions()');
+  apiGet('/full/decisions?window=30&lead_time=7')
+    .then(function(data){
+      console.log('[dec] status OK, items crudos:', data.items && data.items.slice(0,3));
+      // NO renombrar keys; solo normalizamos números
+      var rows = (data.items || []).map(function(it){
+        return {
+          item_id:       String(it.item_id || ''),
+          title:         String(it.title || ''),
+          inventory_id:  String(it.inventory_id || ''),
+          stock:         Number(it.stock || 0),
+          sales:         Number(it.sales || 0),
+          visits:        Number(it.visits || 0),
+          conv:          Number(it.conv || 0),                 // proporción 0..1
+          demand_per_day:Number(it.demand_per_day || 0),
+          coverage_days: Number(isFinite(it.coverage_days) ? it.coverage_days : 0),
+          window_days:   Number(it.window_days || 0),
+          lead_time_days:Number(it.lead_time_days || 0),
+          from:          String(it.from || ''),
+          to:            String(it.to || ''),
+        }
+      });
+
+      console.log('[dec] mapeadas 3 primeras:', rows.slice(0,3));
+      renderDecisionsTable(rows);
+    })
+    .catch(function(e){
+      console.error('[dec] Error decisiones:', e);
+      alert('Error decisiones: ' + e.message);
+    });
 }
+
 
 // Sorting por click en encabezado
 (function setupDecSort(){
