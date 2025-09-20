@@ -194,26 +194,22 @@
       function loadCfgIntoUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) b.value = cfg.base; if(t) t.value = cfg.token }
       function saveCfgFromUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) cfg.base = (b.value||'').trim(); if(t) cfg.token = (t.value||'').trim() }
 
-      function apiGet(path){
-  const url = (window.API_BASE_URL || '') + path;
-  const token = window.API_TOKEN || ''; // si lo tenés definido en global
+    function apiGet(path){
+  var base  = (cfg && typeof cfg.base === 'string') ? cfg.base : '';
+  var token = (cfg && typeof cfg.token === 'string') ? cfg.token : '';
+  var url   = base + path;
 
   console.log('[apiGet] GET', url);
-
   return fetch(url, {
     headers: { 'Authorization': 'Bearer ' + token }
-  }).then(async (r) => {
-    const text = await r.text();
-    console.log('[apiGet] status', r.status, 'body:', text.slice(0,200)); // muestra los primeros 200 caracteres
+  }).then(async function(r){
+    var text = await r.text();
+    console.log('[apiGet] status', r.status, 'body:', text.slice(0,200));
     if (!r.ok) throw new Error('HTTP ' + r.status + ' - ' + text);
-
-    try { 
-      return JSON.parse(text); 
-    } catch {
-      throw new Error('JSON inválido: ' + text);
-    }
+    try { return JSON.parse(text); } catch(e){ throw new Error('JSON inválido: ' + text); }
   });
 }
+
 
 
       // Router simple
