@@ -181,7 +181,7 @@ function renderTable(rows){
       try{
         const data = await apiFetch('/full/stock');
         renderTable(data.rows || []);
-        $('#loadMsg').textContent = `Filas: ${(data.rows||[]).length}`;
+        $('#loadMsg').textContent = `Cantidad: ${(data.rows||[]).length}`;
         $('#loadMsg').className = 'status ok';
       }catch(err){
         $('#loadMsg').textContent = 'Error: ' + err.message;
