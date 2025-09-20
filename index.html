@@ -194,26 +194,27 @@
       function loadCfgIntoUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) b.value = cfg.base; if(t) t.value = cfg.token }
       function saveCfgFromUI(){ var b=el('apiBase'), t=el('apiToken'); if(b) cfg.base = (b.value||'').trim(); if(t) cfg.token = (t.value||'').trim() }
 
-      // HTTP simple con Bearer
       function apiGet(path){
-        return new Promise(function(resolve, reject){
-          if(!cfg.base) return reject(new Error('Falta API Base URL'))
-          var url = cfg.base.replace(/\/$/, '') + path
-          var opts = { headers: {} }
-          if (cfg.token) opts.headers['Authorization'] = 'Bearer ' + cfg.token
-          fetch(url, opts).then(function(res){
-            if(!res.ok){
-              res.text().then(function(t){
-                var detail = ''
-                try{ var j = JSON.parse(t); detail = j.detail || j.error || t }catch(_){ detail = t }
-                reject(new Error(res.status + ' ' + res.statusText + (detail? ' - ' + detail : '')))
-              }).catch(function(){ reject(new Error(res.status + ' ' + res.statusText)) })
-              return
-            }
-            res.json().then(resolve).catch(function(e){ reject(new Error('JSON parse: ' + e.message)) })
-          }).catch(function(e){ reject(e) })
-        })
-      }
+  const url = (window.API_BASE_URL || '') + path;
+  const token = window.API_TOKEN || ''; // si lo tenés definido en global
+
+  console.log('[apiGet] GET', url);
+
+  return fetch(url, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  }).then(async (r) => {
+    const text = await r.text();
+    console.log('[apiGet] status', r.status, 'body:', text.slice(0,200)); // muestra los primeros 200 caracteres
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' - ' + text);
+
+    try { 
+      return JSON.parse(text); 
+    } catch {
+      throw new Error('JSON inválido: ' + text);
+    }
+  });
+}
+
 
       // Router simple
       function showView(id){
@@ -266,57 +267,64 @@
       // Gestión FULL
       var fullRows = []
       function setDefaultDates(){ var d=el('dateFull'); if(d){ var to = new Date(); d.value = to.toISOString().slice(0,10) } }
-   function renderFullTable(rows){
-  var tb = document.querySelector('#fullTable tbody'); if(!tb) return
-  tb.innerHTML = ''
-  for(var i=0;i<Math.min(rows.length,1000);i++){
-    var r = rows[i]
-     // 🔎 LOG 2: lo que llega al render
-    if (i < 3) console.log('render row', i, r);
-    var itemId = pick(r, ['item_id','itemId','ml_item_id','ml_id'])
-    var title  = pick(r, ['title','item_title','name'])
-    var invId  = pick(r, ['inventory_id','inventoryId'])
+  function renderFullTable(rows){
+  console.log('[render] first 3 rows:', rows.slice(0,3));
+  var tb = document.querySelector('#fullTable tbody'); if(!tb) return;
+  tb.innerHTML = '';
+  for (var i = 0; i < Math.min(rows.length, 1000); i++){
+    var r = rows[i];
+    if (i < 3) console.log('[render] row', i, r);
 
-    var tr = document.createElement('tr')
+    var tr = document.createElement('tr');
     tr.innerHTML =
-      '<td>'+itemId+'</td>'+
-      '<td>'+title+'</td>'+
-      '<td>'+invId+'</td>'+
-      // 👇 usar el campo normalizado 'stock' (numérico)
-      '<td>'+Number(r.stock||0)+'</td>'
-    tb.appendChild(tr)
+      '<td>'+ (r.item_id || '') +'</td>'+
+      '<td>'+ (r.title || '') +'</td>'+
+      '<td>'+ (r.inventory_id || '') +'</td>'+
+      '<td>'+ Number(r.stock || 0) +'</td>';  // 👈 stock
+    tb.appendChild(tr);
   }
-  var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length
+  var meta = el('fullMeta'); if(meta) meta.textContent = 'Filas: ' + rows.length;
 }
+
 
 
  function loadFull(){
+  console.log('[full] loadFull() INICIO');
+
   try {
+    console.log('[full] lanzando fetch /stock/full');
     apiGet('/stock/full').then(function(data){
-    // Normalizamos claves/formatos para que el filtro funcione bien
-fullRows = (data.rows || []).map(function(r){
-  return {
-    inventory_id: String(pick(r, ['inventory_id','inventoryId'], '')),
-    item_id: String(pick(r, ['item_id','itemId','ml_item_id','ml_id'], '')).trim().toUpperCase(),
-    title:        String(pick(r, ['title','item_title','name'], '')),
+      console.log('[full] status OK, data cruda:', data);
+      // Normalizamos claves/formatos para que el filtro funcione bien
+      fullRows = (data.rows || []).map(function(r){
+        const stock = Number(
+          (r.total ?? r.available_quantity ?? r.available ?? r.qty ?? r.stock ?? 0)
+        ) || 0;
 
-    // 👇 clave: usar 'stock' y castear a número. Priorizar 'total'.
-    stock: Number(pick(r, ['total','available_quantity','available','qty','stock'], 0)) || 0,
+        return {
+          inventory_id: String(pick(r, ['inventory_id','inventoryId'], '')),
+          item_id:      String(pick(r, ['item_id','itemId','ml_item_id','ml_id'], '')).trim().toUpperCase(),
+          title:        String(pick(r, ['title','item_title','name'], '')),
+          stock
+        }
+      });
+
+      // 🔎 LOGS clave
+      console.log('[full] raw row 0:', (data.rows||[])[0]);
+      console.log('[full] mapped row 0:', fullRows[0]);
+      console.log('[full] mapped first 3:', fullRows.slice(0,3));
+
+      renderFullTable(fullRows);
+    }).catch(function(e){
+      console.error('[full] CATCH apiGet /stock/full:', e);
+      alert('Error stock Full: ' + e.message);
+    });
+  } catch(e){
+    console.error('[full] TRY/CATCH loadFull:', e);
+    alert('Error stock Full: ' + e.message);
   }
-})
-
-// 🔎 LOG 1: cómo viene del back (crudo) y cómo quedó mapeado
-console.log('raw row 0:', (data.rows||[])[0]);
-console.log('mapped row 0:', fullRows[0]);
-console.log('mapped first 3:', fullRows.slice(0,3));
-
-renderFullTable(fullRows);
-      
-renderFullTable(fullRows)
-
-    }).catch(function(e){ alert('Error stock Full: ' + e.message) })
-  } catch(e){ alert('Error stock Full: ' + e.message) }
 }
+
 
 
 
