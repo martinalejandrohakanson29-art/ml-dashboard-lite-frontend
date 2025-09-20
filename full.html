@@ -104,22 +104,31 @@
       return data;
     }
 
-    function renderTable(rows){
+
+function renderTable(rows){
     const wrap = $('#tableWrap');
     if(!rows || !rows.length){
       wrap.innerHTML = '<span class="muted">Sin filas.</span>';
       return;
     }
 
-    // columnas dinámicas - ocultamos las que no queremos
-    let cols = Object.keys(rows[0]).filter(
-      c => !['created_at','updated_at'].includes(c)
-    );
+    // Columnas a ocultar
+    const hidden = new Set(['available_quantity','created_date_utc','created_at','updated_at']);
+
+    // Renombres para el header
+    const rename = { not_available_quantity: 'pausados' };
+
+    // Armamos columnas: preferimos un orden básico y luego el resto
+    const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
+    const preferred = ['title','total','not_available_quantity'];
+    const rest = all.filter(c => !preferred.includes(c));
+    const cols = [...preferred.filter(c => all.includes(c)), ...rest];
 
     let html = '<div style="overflow:auto"><table><thead><tr>';
     html += cols.map(c => {
       const cls = (c === 'title') ? ' class="col-title"' : '';
-      return `<th${cls}>${c}</th>`;
+      const label = rename[c] || c;
+      return `<th${cls}>${label}</th>`;
     }).join('');
     html += '</tr></thead><tbody>';
 
@@ -129,11 +138,12 @@
         return `<td${cls}>${safe(r[c])}</td>`;
       }).join('') + '</tr>';
     }
-    html += '</tbody></table></div>';
 
+    html += '</tbody></table></div>';
     wrap.innerHTML = html;
   }
 
+    
     function safe(v){
       if(v===null || v===undefined) return '';
       if(typeof v === 'object') return JSON.stringify(v);
