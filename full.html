@@ -6,7 +6,8 @@
   <title>MercadoLibre Full — Módulos</title>
   <style>
     :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--line:#1f2937}
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
       background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);min-height:100vh}
     .wrap{max-width:1100px;margin:0 auto;padding:20px}
     .card{background:#111827;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 8px 22px rgba(0,0,0,.25);margin-bottom:14px}
@@ -68,50 +69,44 @@
       <button class="tab" data-view="shipments">Envíos FULL</button>
     </section>
 
-    <!-- Submódulo: STOCK (lo que ya tenías) -->
+    <!-- ===== Submódulo: STOCK ===== -->
     <div id="view-stock">
+      <!-- Acciones — Stock -->
       <section class="card">
         <h1>Acciones — Stock</h1>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <button class="btn" id="btnLoad">Cargar stock FULL</button>
-
- <!-- 2A: NUEVO -->
-  <section class="card">
-    <h1>Acciones — KPIs 30d</h1>
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-      <button class="btn" id="btnLoadKpis">Cargar KPIs 30d</button>
-      <span id="loadMsgKpis" class="status muted"></span>
-    </div>
-  </section>
-
-  <section class="card">
-    <h1>Tabla: KPIs 30d (stock + visitas + ventas)</h1>
-    <div id="kpisWrap" class="muted">Sin datos aún.</div>
-  </section>
-  <!-- /2A -->
-
-  <section class="card">
-    <h1>Tabla: full_stock_min</h1>
-    <div id="tableWrap" class="muted">Sin datos aún.</div>
-  </section>
-</div>
-          
           <!-- Buscador -->
           <input id="q" placeholder="Buscar en todas las columnas..."
-                style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
+                 style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
                         border:1px solid #263043; background:#0f172a; color:var(--text)" />
-
           <span id="loadMsg" class="status muted"></span>
         </div>
       </section>
 
+      <!-- Acciones — KPIs 30d -->
+      <section class="card">
+        <h1>Acciones — KPIs 30d</h1>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <button class="btn" id="btnLoadKpis">Cargar KPIs 30d</button>
+          <span id="loadMsgKpis" class="status muted"></span>
+        </div>
+      </section>
+
+      <!-- Tabla KPIs -->
+      <section class="card">
+        <h1>Tabla: KPIs 30d (stock + visitas + ventas)</h1>
+        <div id="kpisWrap" class="muted">Sin datos aún.</div>
+      </section>
+
+      <!-- Tabla Stock -->
       <section class="card">
         <h1>Tabla: full_stock_min</h1>
         <div id="tableWrap" class="muted">Sin datos aún.</div>
       </section>
     </div>
 
-    <!-- Submódulo: ENVÍOS FULL (placeholder inicial) -->
+    <!-- ===== Submódulo: ENVÍOS FULL (placeholder) ===== -->
     <div id="view-shipments" class="hidden">
       <section class="card">
         <h1>Acciones — Envíos FULL</h1>
@@ -120,7 +115,6 @@
           <span class="status muted">En esta vista vamos a listar envíos FULL (etiquetas, tracking, etc.).</span>
         </div>
       </section>
-
       <section class="card">
         <h1>Tabla: envíos FULL</h1>
         <div id="shipmentsWrap" class="muted">Próximamente.</div>
@@ -146,7 +140,9 @@
 
     // ===== Buscador / filtro (submódulo Stock) =====
     let fullRows = [];
+    let kpiRows  = [];
     const hiddenCols = ['available_quantity','created_date_utc','created_at','updated_at'];
+
     function getQuery(){ const el = $('#q'); return el ? el.value.trim().toLowerCase() : ''; }
     function filterRows(rows){
       const q = getQuery(); if(!q) return rows;
@@ -158,7 +154,6 @@
         })
       );
     }
-let kpiRows = [];
 
     // ===== Config + fetch =====
     function getCfg(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(_){ return {}; } }
@@ -169,7 +164,9 @@ let kpiRows = [];
     async function apiFetch(path){
       const { url, token } = getCfg();
       if(!url) throw new Error('Falta API Base URL');
-      const res = await fetch(url.replace(/\/+$/,'') + path, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+      const res = await fetch(url.replace(/\/+$/,'') + path, {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
       const data = await res.json().catch(()=> ({}));
       if(!res.ok || data.ok === false){ throw new Error(data.error || `HTTP ${res.status}`); }
       return data;
@@ -206,82 +203,59 @@ let kpiRows = [];
       wrap.innerHTML = html;
     }
 
+    // ===== Tabla KPIs =====
+    function renderKpisTable(rows){
+      const wrap = $('#kpisWrap');
+      if(!rows || !rows.length){ wrap.innerHTML = '<span class="muted">Sin filas.</span>'; return; }
+
+      const hidden = new Set(['created_at','updated_at','available_quantity']);
+      const rename = {
+        visits_30d: 'visitas 30d',
+        orders_30d: 'ventas 30d',
+        conversion_30d: 'conversión',
+        orders_per_day_30d: 'prom. diario',
+        visits_per_day_30d: 'visits prom diario',
+        not_available_quantity: 'pausados'
+      };
+
+      const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
+      const preferred = [
+        'title','visits_30d','orders_30d','conversion_30d',
+        'orders_per_day_30d','visits_per_day_30d','total','not_available_quantity',
+        'inventory_id','item_id'
+      ];
+      const rest = all.filter(c => !preferred.includes(c));
+      const cols = [...preferred.filter(c => all.includes(c)), ...rest];
+
+      let html = '<div style="overflow:auto"><table><thead><tr>';
+      html += cols.map(c => {
+        const cls = (c === 'title') ? ' class="col-title"' : '';
+        const label = rename[c] || c;
+        return `<th${cls}>${label}</th>`;
+      }).join('');
+      html += '</tr></thead><tbody>';
+
+      for(const r of rows){
+        html += '<tr>' + cols.map(c => {
+          const cls = (c === 'title') ? ' class="col-title"' : '';
+          let val = r[c];
+          if (c === 'conversion_30d' && val != null) {
+            const num = Number(val) * 100;                 // a porcentaje
+            val = isFinite(num) ? `${num.toFixed(2)}%` : '';
+          }
+          if ((c === 'orders_per_day_30d' || c === 'visits_per_day_30d') && val != null) {
+            const num = Number(val);
+            val = isFinite(num) ? num.toFixed(3) : '';
+          }
+          return `<td${cls}>${safe(val)}</td>`;
+        }).join('') + '</tr>';
+      }
+      html += '</tbody></table></div>';
+      wrap.innerHTML = html;
+    }
+
     function safe(v){ if(v==null) return ''; if(typeof v === 'object') return JSON.stringify(v); return String(v); }
 
-// --- reemplazar SOLO esta función ---
-  function renderKpisTable(rows){
-    const wrap = $('#kpisWrap');
-    if(!rows || !rows.length){
-      wrap.innerHTML = '<span class="muted">Sin filas.</span>';
-      return;
-    }
-
-    // ocultamos columnas que no queremos mostrar
-    const hidden = new Set([
-      'created_at',
-      'updated_at',
-      'available_quantity'      // pedido: esconder esta
-    ]);
-
-    // renombres pedidos
-    const rename = {
-      visits_30d: 'visitas 30d',
-      orders_30d: 'ventas 30d',
-      conversion_30d: 'conversión',
-      orders_per_day_30d: 'prom. diario',
-      visits_per_day_30d: 'visits prom diario',
-      not_available_quantity: 'pausados'
-    };
-
-    // orden recomendado
-    const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
-    const preferred = [
-      'title',
-      'visits_30d',
-      'orders_30d',
-      'conversion_30d',
-      'orders_per_day_30d',
-      'visits_per_day_30d',
-      'total',
-      'not_available_quantity',
-      'inventory_id',
-      'item_id'
-    ];
-    const rest = all.filter(c => !preferred.includes(c));
-    const cols = [...preferred.filter(c => all.includes(c)), ...rest];
-
-    let html = '<div style="overflow:auto"><table><thead><tr>';
-    html += cols.map(c => {
-      const cls = (c === 'title') ? ' class="col-title"' : '';
-      const label = rename[c] || c;
-      return `<th${cls}>${label}</th>`;
-    }).join('');
-    html += '</tr></thead><tbody>';
-
-    for(const r of rows){
-      html += '<tr>' + cols.map(c => {
-        const cls = (c === 'title') ? ' class="col-title"' : '';
-        let val = r[c];
-
-        // formateos
-        if (c === 'conversion_30d' && val != null) {
-          const num = Number(val) * 100;           // a porcentaje
-          val = isFinite(num) ? `${num.toFixed(2)}%` : '';
-        }
-        if ((c === 'orders_per_day_30d' || c === 'visits_per_day_30d') && val != null) {
-          const num = Number(val);
-          val = isFinite(num) ? num.toFixed(3) : '';
-        }
-
-        return `<td${cls}>${safe(val)}</td>`;
-      }).join('') + '</tr>';
-    }
-
-    html += '</tbody></table></div>';
-    wrap.innerHTML = html;
-  }
-
-    
     // ===== Eventos =====
     $('#btnSave').addEventListener('click', ()=>{
       const cfg = readInputs(); setCfg(cfg);
@@ -301,14 +275,14 @@ let kpiRows = [];
       }
     });
 
-    // Buscador (stock)
+    // Buscador: afecta ambas tablas del submódulo Stock
     const qEl = $('#q');
-if(qEl){ qEl.addEventListener('input', ()=>{
-  renderTable(filterRows(fullRows));
-  renderKpisTable(filterRows(kpiRows));
-});}
+    if(qEl){ qEl.addEventListener('input', ()=>{
+      renderTable(filterRows(fullRows));
+      renderKpisTable(filterRows(kpiRows));
+    });}
 
-    // Cargar (stock)
+    // Cargar Stock
     const btnLoad = $('#btnLoad');
     if(btnLoad){
       btnLoad.addEventListener('click', async ()=>{
@@ -323,20 +297,22 @@ if(qEl){ qEl.addEventListener('input', ()=>{
         }
       });
     }
-const btnLoadKpis = $('#btnLoadKpis');
-if(btnLoadKpis){
-  btnLoadKpis.addEventListener('click', async ()=>{
-    $('#loadMsgKpis').textContent = 'Cargando...'; $('#loadMsgKpis').className = 'status';
-    try{
-      const data = await apiFetch('/full/kpis-30d');
-      kpiRows = data.rows || [];
-      renderKpisTable(filterRows(kpiRows));  // respeta el buscador
-      $('#loadMsgKpis').textContent = `Filas: ${kpiRows.length}`; $('#loadMsgKpis').className = 'status ok';
-    }catch(err){
-      $('#loadMsgKpis').textContent = 'Error: ' + err.message; $('#loadMsgKpis').className = 'status error';
+
+    // Cargar KPIs 30d
+    const btnLoadKpis = $('#btnLoadKpis');
+    if(btnLoadKpis){
+      btnLoadKpis.addEventListener('click', async ()=>{
+        $('#loadMsgKpis').textContent = 'Cargando...'; $('#loadMsgKpis').className = 'status';
+        try{
+          const data = await apiFetch('/full/kpis-30d');
+          kpiRows = data.rows || [];
+          renderKpisTable(filterRows(kpiRows));
+          $('#loadMsgKpis').textContent = `Filas: ${kpiRows.length}`; $('#loadMsgKpis').className = 'status ok';
+        }catch(err){
+          $('#loadMsgKpis').textContent = 'Error: ' + err.message; $('#loadMsgKpis').className = 'status error';
+        }
+      });
     }
-  });
-}
 
     // init
     writeInputs(getCfg());
