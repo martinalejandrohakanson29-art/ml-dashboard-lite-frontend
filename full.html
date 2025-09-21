@@ -35,6 +35,14 @@
     .hidden{display:none}
     .card + .card { margin-top: 14px; }
     .link{font-size:.9rem; text-decoration:underline; color:#cbd5e1; cursor:pointer}
+    .fullbleed {
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+}
+.fullbleed table { width: 100%; }
   </style>
 </head>
 <body>
@@ -95,10 +103,11 @@
       </section>
 
       <!-- Tabla KPIs -->
-      <section class="card">
-        <h1>Tabla: KPIs 30d (stock + visitas + ventas)</h1>
-        <div id="kpisWrap" class="muted">Sin datos aún.</div>
-      </section>
+     <section class="card fullbleed">
+  <h1>Tabla: KPIs 30d (stock + visitas + ventas)</h1>
+  <div id="kpisWrap" class="muted">Sin datos aún.</div>
+</section>
+
 
       <!-- Tabla Stock -->
       <section class="card">
@@ -232,55 +241,64 @@
       wrap.innerHTML = html;
     }
 
-    function renderKpisTable(rows){
-      const wrap = $('#kpisWrap');
-      if(!rows || !rows.length){ wrap.innerHTML = '<span class="muted">Sin filas.</span>'; return; }
-
-      const hidden = new Set(['created_at','updated_at','available_quantity']);
-      const rename = {
-        visits_30d: 'visitas 30d',
-        orders_30d: 'ventas 30d',
-        conversion_30d: 'conversión',
-        orders_per_day_30d: 'prom. diario',
-        visits_per_day_30d: 'visits prom diario',
-        not_available_quantity: 'pausados'
-      };
-
-      const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
-      const preferred = [
-        'title','visits_30d','orders_30d','conversion_30d',
-        'orders_per_day_30d','visits_per_day_30d','total','not_available_quantity',
-        'inventory_id','item_id'
-      ];
-      const rest = all.filter(c => !preferred.includes(c));
-      const cols = [...preferred.filter(c => all.includes(c)), ...rest];
-
-      let html = '<div style="overflow:auto"><table><thead><tr>';
-      html += cols.map(c => {
-        const cls = (c === 'title') ? ' class="col-title"' : '';
-        const label = rename[c] || c;
-        return `<th${cls}>${label}</th>`;
-      }).join('');
-      html += '</tr></thead><tbody>';
-
-      for(const r of rows){
-        html += '<tr>' + cols.map(c => {
-          const cls = (c === 'title') ? ' class="col-title"' : '';
-          let val = r[c];
-          if (c === 'conversion_30d' && val != null) {
-            const num = Number(val) * 100;
-            val = isFinite(num) ? `${num.toFixed(2)}%` : '';
-          }
-          if ((c === 'orders_per_day_30d' || c === 'visits_per_day_30d') && val != null) {
-            const num = Number(val);
-            val = isFinite(num) ? num.toFixed(3) : '';
-          }
-          return `<td${cls}>${safe(val)}</td>`;
-        }).join('') + '</tr>';
-      }
-      html += '</tbody></table></div>';
-      wrap.innerHTML = html;
+     function renderKpisTable(rows){
+    const wrap = $('#kpisWrap');
+    if(!rows || !rows.length){
+      wrap.innerHTML = '<span class="muted">Sin filas.</span>';
+      return;
     }
+
+    // Ocultamos metadatos y "pausados" (not_available_quantity)
+    const hidden = new Set(['created_at','updated_at','available_quantity','not_available_quantity']);
+
+    // Renombres (ya SIN "pausados")
+    const rename = {
+      visits_30d: 'visitas 30d',
+      orders_30d: 'ventas 30d',
+      conversion_30d: 'conversión',
+      orders_per_day_30d: 'prom. diario',
+      visits_per_day_30d: 'visits prom diario'
+    };
+
+    const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
+    const preferred = [
+      'title','visits_30d','orders_30d','conversion_30d',
+      'orders_per_day_30d','visits_per_day_30d','total',
+      'inventory_id','item_id'
+    ];
+    const rest = all.filter(c => !preferred.includes(c));
+    const cols = [...preferred.filter(c => all.includes(c)), ...rest];
+
+    let html = '<div style="overflow:auto"><table><thead><tr>';
+    html += cols.map(c => {
+      const cls = (c === 'title') ? ' class="col-title"' : '';
+      const label = rename[c] || c;
+      return `<th${cls}>${label}</th>`;
+    }).join('');
+    html += '</tr></thead><tbody>';
+
+    for(const r of rows){
+      html += '<tr>' + cols.map(c => {
+        const cls = (c === 'title') ? ' class="col-title"' : '';
+        let val = r[c];
+
+        // Conversión en % (dos decimales)
+        if (c === 'conversion_30d' && val != null) {
+          const num = Number(val) * 100;
+          val = isFinite(num) ? `${num.toFixed(2)}%` : '';
+        }
+        // Promedios con 3 decimales
+        if ((c === 'orders_per_day_30d' || c === 'visits_per_day_30d') && val != null) {
+          const num = Number(val);
+          val = isFinite(num) ? num.toFixed(3) : '';
+        }
+
+        return `<td${cls}>${safe(val)}</td>`;
+      }).join('') + '</tr>';
+    }
+    html += '</tbody></table></div>';
+    wrap.innerHTML = html;
+  }
 
     function safe(v){ if(v==null) return ''; if(typeof v === 'object') return JSON.stringify(v); return String(v); }
 
