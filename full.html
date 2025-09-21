@@ -35,7 +35,7 @@
     .hidden{display:none}
     .card + .card { margin-top: 14px; }
     .link{font-size:.9rem; text-decoration:underline; color:#cbd5e1; cursor:pointer}
-    .fullbleed {
+   .fullbleed{
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   border-left: 0;
@@ -43,6 +43,14 @@
   border-radius: 0;
 }
 .fullbleed table { width: 100%; }
+
+/* Mantiene el título alineado al contenido aunque el card sea full-bleed */
+.fullbleed .inner{
+  max-width: 1100px;   /* mismo ancho que .wrap */
+  margin: 0 auto;
+  padding: 0 20px;     /* mismo padding lateral de la página */
+}
+    
   </style>
 </head>
 <body>
@@ -103,10 +111,13 @@
       </section>
 
       <!-- Tabla KPIs -->
-     <section class="card fullbleed">
-  <h1>Tabla: KPIs 30d (stock + visitas + ventas)</h1>
+    <section class="card fullbleed">
+  <div class="inner">
+    <h1>Tabla: KPIs 30d (stock + visitas + ventas)</h1>
+  </div>
   <div id="kpisWrap" class="muted">Sin datos aún.</div>
 </section>
+
 
 
       <!-- Tabla Stock -->
@@ -249,7 +260,7 @@
     }
 
     // Ocultamos metadatos y "pausados" (not_available_quantity)
-    const hidden = new Set(['created_at','updated_at','available_quantity','not_available_quantity']);
+const hidden = new Set(['created_at','updated_at','available_quantity','not_available_quantity']);
 
     // Renombres (ya SIN "pausados")
     const rename = {
