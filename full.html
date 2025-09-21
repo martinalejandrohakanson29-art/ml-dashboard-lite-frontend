@@ -34,6 +34,7 @@
     .tab.active{background:#1f2937}
     .hidden{display:none}
     .card + .card { margin-top: 14px; }
+    .link{font-size:.9rem; text-decoration:underline; color:#cbd5e1; cursor:pointer}
   </style>
 </head>
 <body>
@@ -43,7 +44,7 @@
       <div class="muted">Módulo: MercadoLibre Full</div>
     </div>
 
-    <!-- Config (global para ambos submódulos) -->
+    <!-- Config -->
     <section class="card">
       <h1>Config</h1>
       <div class="row">
@@ -56,14 +57,15 @@
           <input id="apiToken" placeholder="pegá el API_SECRET" />
         </div>
       </div>
-      <div style="display:flex; gap:10px; margin-top:10px">
+      <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap">
         <button class="btn" id="btnSave">Guardar</button>
         <button class="btn" id="btnProbe">Probar conexión</button>
+        <a id="openHealth" class="link" target="_blank" rel="noopener">Abrir /health</a>
         <span id="probeMsg" class="status muted"></span>
       </div>
     </section>
 
-    <!-- SUBNAV: pestañas de submódulos -->
+    <!-- SUBNAV -->
     <section class="subnav">
       <button class="tab active" data-view="stock">Stock</button>
       <button class="tab" data-view="shipments">Envíos FULL</button>
@@ -76,7 +78,6 @@
         <h1>Acciones — Stock</h1>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <button class="btn" id="btnLoad">Cargar stock FULL</button>
-          <!-- Buscador -->
           <input id="q" placeholder="Buscar en todas las columnas..."
                  style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
                         border:1px solid #263043; background:#0f172a; color:var(--text)" />
@@ -126,7 +127,7 @@
     const $ = (q) => document.querySelector(q);
     const LS_KEY = 'ml_full_cfg';
 
-    // ===== Tabs: cambiar submódulo =====
+    // ===== Tabs =====
     function setView(view){
       document.querySelectorAll('.tab').forEach(b=>{
         b.classList.toggle('active', b.dataset.view === view);
@@ -138,7 +139,54 @@
       b.addEventListener('click', ()=> setView(b.dataset.view));
     });
 
-    // ===== Buscador / filtro (submódulo Stock) =====
+    // ===== Helpers config =====
+    function getCfg(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(_){ return {}; } }
+    function setCfg(cfg){ localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }
+    function readInputs(){ return { url: $('#apiUrl').value.trim(), token: $('#apiToken').value.trim() }; }
+    function writeInputs(cfg){ $('#apiUrl').value = cfg.url || ''; $('#apiToken').value = cfg.token || ''; updateHealthLink(); }
+
+    function normalizeUrl(raw){
+      let url = (raw || '').trim();
+      if (!url) return '';
+      // Si viene con http, lo forzamos a https (los navegadores bloquean "http" desde un sitio https)
+      if (/^http:\/\//i.test(url)) url = url.replace(/^http:\/\//i, 'https://');
+      return url.replace(/\/+$/,''); // sin barra final
+    }
+
+    function updateHealthLink(){
+      const { url } = getCfg();
+      const base = normalizeUrl(url);
+      const a = $('#openHealth');
+      if (base) {
+        a.href = base + '/health';
+        a.style.pointerEvents = 'auto';
+        a.style.opacity = 1;
+      } else {
+        a.removeAttribute('href');
+        a.style.pointerEvents = 'none';
+        a.style.opacity = .6;
+      }
+    }
+
+    async function apiFetch(path){
+      const raw = getCfg();
+      const base = normalizeUrl(raw.url);
+      const token = raw.token || '';
+      if(!base) throw new Error('Falta API Base URL');
+      if(!/^https:\/\//i.test(base)) throw new Error('La URL debe usar https');
+
+      const res = await fetch(base + path, {
+        mode: 'cors',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
+      const data = await res.json().catch(()=> ({}));
+      if(!res.ok || data.ok === false){
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    // ===== Buscador / filtro (stock y kpis) =====
     let fullRows = [];
     let kpiRows  = [];
     const hiddenCols = ['available_quantity','created_date_utc','created_at','updated_at'];
@@ -155,31 +203,12 @@
       );
     }
 
-    // ===== Config + fetch =====
-    function getCfg(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(_){ return {}; } }
-    function setCfg(cfg){ localStorage.setItem(LS_KEY, JSON.stringify(cfg)); }
-    function readInputs(){ return { url: $('#apiUrl').value.trim(), token: $('#apiToken').value.trim() }; }
-    function writeInputs(cfg){ $('#apiUrl').value = cfg.url || ''; $('#apiToken').value = cfg.token || ''; }
-
-    async function apiFetch(path){
-      const { url, token } = getCfg();
-      if(!url) throw new Error('Falta API Base URL');
-      const res = await fetch(url.replace(/\/+$/,'') + path, {
-        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-      });
-      const data = await res.json().catch(()=> ({}));
-      if(!res.ok || data.ok === false){ throw new Error(data.error || `HTTP ${res.status}`); }
-      return data;
-    }
-
-    // ===== Tabla Stock =====
+    // ===== Tablas =====
     function renderTable(rows){
       const wrap = $('#tableWrap');
       if(!rows || !rows.length){ wrap.innerHTML = '<span class="muted">Sin filas.</span>'; return; }
-
       const hidden = new Set(['available_quantity','created_date_utc','created_at','updated_at']);
       const rename = { not_available_quantity: 'pausados' };
-
       const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
       const preferred = ['title','total','not_available_quantity'];
       const rest = all.filter(c => !preferred.includes(c));
@@ -203,7 +232,6 @@
       wrap.innerHTML = html;
     }
 
-    // ===== Tabla KPIs =====
     function renderKpisTable(rows){
       const wrap = $('#kpisWrap');
       if(!rows || !rows.length){ wrap.innerHTML = '<span class="muted">Sin filas.</span>'; return; }
@@ -240,7 +268,7 @@
           const cls = (c === 'title') ? ' class="col-title"' : '';
           let val = r[c];
           if (c === 'conversion_30d' && val != null) {
-            const num = Number(val) * 100;                 // a porcentaje
+            const num = Number(val) * 100;
             val = isFinite(num) ? `${num.toFixed(2)}%` : '';
           }
           if ((c === 'orders_per_day_30d' || c === 'visits_per_day_30d') && val != null) {
@@ -258,31 +286,33 @@
 
     // ===== Eventos =====
     $('#btnSave').addEventListener('click', ()=>{
-      const cfg = readInputs(); setCfg(cfg);
+      const cfg = readInputs(); setCfg(cfg); writeInputs(cfg);
       $('#probeMsg').textContent = 'Guardado.'; $('#probeMsg').className = 'status ok';
       setTimeout(()=>{ $('#probeMsg').textContent=''; $('#probeMsg').className='status muted'; }, 1200);
     });
 
     $('#btnProbe').addEventListener('click', async ()=>{
-      const cfg = readInputs(); setCfg(cfg);
+      const cfg = readInputs(); setCfg(cfg); writeInputs(cfg);
       $('#probeMsg').textContent = 'Probando...'; $('#probeMsg').className = 'status';
       try{
-        const h = await apiFetch('/health'); const e = await apiFetch('/env-check');
+        const base = normalizeUrl(getCfg().url);
+        if(!/^https:\/\//i.test(base)) throw new Error('La URL debe usar https');
+        const h = await apiFetch('/health'); 
+        const e = await apiFetch('/env-check');
         $('#probeMsg').textContent = `OK (uptime ${h.uptime_s}s, env: ${e.hasUrl?'URL':'-'} ${e.hasServiceRole?'SR':'-'} ${e.hasApiSecret?'TOK':'-'})`;
         $('#probeMsg').className = 'status ok';
       }catch(err){
-        $('#probeMsg').textContent = 'Error: ' + err.message; $('#probeMsg').className = 'status error';
+        $('#probeMsg').textContent = 'Error: ' + err.message + ' (revisá que la URL empiece con https y sea la pública de Render)';
+        $('#probeMsg').className = 'status error';
       }
     });
 
-    // Buscador: afecta ambas tablas del submódulo Stock
     const qEl = $('#q');
     if(qEl){ qEl.addEventListener('input', ()=>{
       renderTable(filterRows(fullRows));
       renderKpisTable(filterRows(kpiRows));
     });}
 
-    // Cargar Stock
     const btnLoad = $('#btnLoad');
     if(btnLoad){
       btnLoad.addEventListener('click', async ()=>{
@@ -298,7 +328,6 @@
       });
     }
 
-    // Cargar KPIs 30d
     const btnLoadKpis = $('#btnLoadKpis');
     if(btnLoadKpis){
       btnLoadKpis.addEventListener('click', async ()=>{
@@ -316,7 +345,7 @@
 
     // init
     writeInputs(getCfg());
-    setView('stock'); // mostramos Stock por defecto
+    setView('stock');
   </script>
 </body>
 </html>
