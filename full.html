@@ -74,6 +74,27 @@
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <button class="btn" id="btnLoad">Cargar stock FULL</button>
 
+ <!-- 2A: NUEVO -->
+  <section class="card">
+    <h1>Acciones — KPIs 30d</h1>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+      <button class="btn" id="btnLoadKpis">Cargar KPIs 30d</button>
+      <span id="loadMsgKpis" class="status muted"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h1>Tabla: KPIs 30d (stock + visitas + ventas)</h1>
+    <div id="kpisWrap" class="muted">Sin datos aún.</div>
+  </section>
+  <!-- /2A -->
+
+  <section class="card">
+    <h1>Tabla: full_stock_min</h1>
+    <div id="tableWrap" class="muted">Sin datos aún.</div>
+  </section>
+</div>
+          
           <!-- Buscador -->
           <input id="q" placeholder="Buscar en todas las columnas..."
                 style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
@@ -136,6 +157,7 @@
         })
       );
     }
+let kpiRows = [];
 
     // ===== Config + fetch =====
     function getCfg(){ try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(_){ return {}; } }
@@ -185,6 +207,40 @@
 
     function safe(v){ if(v==null) return ''; if(typeof v === 'object') return JSON.stringify(v); return String(v); }
 
+function renderKpisTable(rows){
+  const wrap = $('#kpisWrap');
+  if(!rows || !rows.length){ wrap.innerHTML = '<span class="muted">Sin filas.</span>'; return; }
+
+  const hidden = new Set(['created_at','updated_at']); // escondemos metadatos si existieran
+  const rename = { not_available_quantity:'pausados', conversion_30d:'conv_30d' };
+
+  const all = Object.keys(rows[0]).filter(c => !hidden.has(c));
+  const preferred = ['title','visits_30d','orders_30d','conversion_30d','total','not_available_quantity'];
+  const rest = all.filter(c => !preferred.includes(c));
+  const cols = [...preferred.filter(c => all.includes(c)), ...rest];
+
+  let html = '<div style="overflow:auto"><table><thead><tr>';
+  html += cols.map(c => {
+    const cls = (c === 'title') ? ' class="col-title"' : '';
+    const label = rename[c] || c;
+    return `<th${cls}>${label}</th>`;
+  }).join('');
+  html += '</tr></thead><tbody>';
+
+  for(const r of rows){
+    html += '<tr>' + cols.map(c => {
+      const cls = (c === 'title') ? ' class="col-title"' : '';
+      let val = r[c];
+      // formateo suave para la conversión
+      if (c === 'conversion_30d' && val != null) val = Number(val).toFixed(4);
+      return `<td${cls}>${safe(val)}</td>`;
+    }).join('') + '</tr>';
+  }
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+}
+
+    
     // ===== Eventos =====
     $('#btnSave').addEventListener('click', ()=>{
       const cfg = readInputs(); setCfg(cfg);
@@ -206,7 +262,10 @@
 
     // Buscador (stock)
     const qEl = $('#q');
-    if(qEl){ qEl.addEventListener('input', ()=>{ renderTable(filterRows(fullRows)); }); }
+if(qEl){ qEl.addEventListener('input', ()=>{
+  renderTable(filterRows(fullRows));
+  renderKpisTable(filterRows(kpiRows));
+});}
 
     // Cargar (stock)
     const btnLoad = $('#btnLoad');
@@ -223,6 +282,20 @@
         }
       });
     }
+const btnLoadKpis = $('#btnLoadKpis');
+if(btnLoadKpis){
+  btnLoadKpis.addEventListener('click', async ()=>{
+    $('#loadMsgKpis').textContent = 'Cargando...'; $('#loadMsgKpis').className = 'status';
+    try{
+      const data = await apiFetch('/full/kpis-30d');
+      kpiRows = data.rows || [];
+      renderKpisTable(filterRows(kpiRows));  // respeta el buscador
+      $('#loadMsgKpis').textContent = `Filas: ${kpiRows.length}`; $('#loadMsgKpis').className = 'status ok';
+    }catch(err){
+      $('#loadMsgKpis').textContent = 'Error: ' + err.message; $('#loadMsgKpis').className = 'status error';
+    }
+  });
+}
 
     // init
     writeInputs(getCfg());
