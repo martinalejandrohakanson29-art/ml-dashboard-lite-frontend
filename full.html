@@ -213,7 +213,7 @@ th.sortable.active .arrow{ opacity:1 }
   <div id="planWrap" class="muted">Calculá el plan para ver resultados.</div>
 </section>
 
-
+</div>
 
   <script>
     const $ = (q) => document.querySelector(q);
@@ -497,18 +497,7 @@ function filterPlan(rows){
   });
 }
 
-let planRows = []; // ya lo tenías
-let planSort = { col: 'status', dir: 'asc' }; // estado inicial de orden
 
-// columnas que se comparan numéricamente
-const planNumericCols = new Set([
-  'suggest','dos','rop','target','available_quantity','opd',
-  'orders_30d','visits_30d','conversion_30d','days_no_sale'
-]);
-
-function planRankStatus(s){
-  return s==='red' ? 0 : s==='yellow' ? 1 : s==='green' ? 2 : 3;
-}
 
 function planGetVal(r, c){
   if (c === 'status') return planRankStatus(r.status);
