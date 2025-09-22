@@ -71,6 +71,11 @@
   z-index: 2;                /* arriba de las celdas */
   box-shadow: 0 1px 0 #1f2937;  /* línea inferior para separar */
 }
+/* El scroller de la tabla del plan ocupa toda la altura disponible */
+#planCard .table-scroll{
+  height: var(--planH, 70vh);  /* fallback si aún no calculamos */
+  max-height: none;
+}
 
 
     
@@ -196,11 +201,13 @@
     </div>
   </section>
 
-  <section class="card">
+ <section id="planCard" class="card fullbleed">
+  <div class="inner">
     <h1>Resultado — sugerencias de envío</h1>
-    <div id="planWrap" class="muted">Calculá el plan para ver resultados.</div>
-  </section>
-</div>
+  </div>
+  <div id="planWrap" class="muted">Calculá el plan para ver resultados.</div>
+</section>
+
 
 
   <script>
@@ -283,6 +290,23 @@
       );
     }
 
+
+function fitPlanHeight(){
+  const card = document.querySelector('#planCard');
+  const scroller = card?.querySelector('.table-scroll');
+  if(!card || !scroller) return;
+
+  const paddingBottom = 16; // margen inferior del card
+  const top = scroller.getBoundingClientRect().top; // Y del scroller en viewport
+  const avail = window.innerHeight - top - paddingBottom;
+  if (avail > 120) scroller.style.setProperty('--planH', avail + 'px');
+}
+
+window.addEventListener('resize', fitPlanHeight);
+window.addEventListener('load', fitPlanHeight);
+
+
+    
     // ===== Tablas =====
     function renderTable(rows){
       const wrap = $('#tableWrap');
@@ -472,6 +496,7 @@ function renderPlanTable(rows){
   const wrap = $('#planWrap');
   if(!rows || !rows.length){
     wrap.innerHTML = '<span class="muted">Sin filas.</span>';
+    fitPlanHeight(); // ajusta altura también sin datos
     return;
   }
 
@@ -487,8 +512,9 @@ function renderPlanTable(rows){
     conversion_30d:'conv.', days_no_sale:'sin venta (días)'
   };
 
-let html = '<div class="table-scroll"><table><thead><tr>';
-  html += cols.map(c => `<th>${label[c] || c}</th>`).join('') + '</tr></thead><tbody>';
+  let html = '<div class="table-scroll"><table><thead><tr>';
+  html += cols.map(c => `<th>${label[c] || c}</th>`).join('');
+  html += '</tr></thead><tbody>';
 
   for(const r of rows){
     const conv = (r.conversion_30d != null) ? (Number(r.conversion_30d)*100).toFixed(2)+'%' : '';
@@ -510,9 +536,14 @@ let html = '<div class="table-scroll"><table><thead><tr>';
       + `<td>${safe(r.item_id)}</td>`
       + '</tr>';
   }
+
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
+
+  // 👉 que el scroller llene hasta abajo
+  fitPlanHeight();
 }
+
 
 // Eventos
 const btnPlan = $('#btnPlan');
