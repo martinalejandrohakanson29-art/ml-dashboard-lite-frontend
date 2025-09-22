@@ -477,6 +477,19 @@ let html = '<div class="table-scroll"><table><thead><tr>';
 
 // ====== Replenishment (Envíos FULL) ======
 let planRows = [];
+// Orden inicial (columna y dirección)
+let planSort = { col: 'status', dir: 'asc' };
+
+// Columnas numéricas para ordenar correctamente
+const planNumericCols = new Set([
+  'suggest','dos','rop','target','available_quantity','opd',
+  'orders_30d','visits_30d','conversion_30d','days_no_sale'
+]);
+
+// Rank para el estado (rojo < amarillo < verde)
+function planRankStatus(s){
+  return s==='red' ? 0 : s==='yellow' ? 1 : s==='green' ? 2 : 3;
+}
 
 function getPlanParams(){
   return {
