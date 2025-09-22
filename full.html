@@ -50,6 +50,13 @@
   margin: 0 auto;
   padding: 0 20px;     /* mismo padding lateral de la página */
 }
+
+/* Semáforo + pills */
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:6px}
+.dot.red{background:#ef4444}.dot.yellow{background:#f59e0b}.dot.green{background:#22c55e}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.8rem;border:1px solid var(--line)}
+.pill.yellow{background:#3f2f1a;color:#fde68a;border-color:#92400e}
+
     
   </style>
 </head>
@@ -128,21 +135,57 @@
       </section>
     </div>
 
-    <!-- ===== Submódulo: ENVÍOS FULL (placeholder) ===== -->
-    <div id="view-shipments" class="hidden">
-      <section class="card">
-        <h1>Acciones — Envíos FULL</h1>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-          <button class="btn" disabled title="Próximamente">Cargar envíos (próximamente)</button>
-          <span class="status muted">En esta vista vamos a listar envíos FULL (etiquetas, tracking, etc.).</span>
-        </div>
-      </section>
-      <section class="card">
-        <h1>Tabla: envíos FULL</h1>
-        <div id="shipmentsWrap" class="muted">Próximamente.</div>
-      </section>
+  <div id="view-shipments" class="">
+  <section class="card">
+    <h1>Plan de envío — parámetros</h1>
+
+    <div class="row">
+      <div>
+        <label>Lead time (días)</label>
+        <input id="p-lt" type="number" min="0" step="1" value="7" />
+      </div>
+      <div>
+        <label>Buffer (días)</label>
+        <input id="p-buffer" type="number" min="0" step="1" value="3" />
+      </div>
     </div>
-  </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>Cobertura objetivo (días)</label>
+        <input id="p-cover" type="number" min="0" step="1" value="14" />
+      </div>
+      <div>
+        <label>Piso ventas/día (MIN_OPD)</label>
+        <input id="p-minopd" type="number" min="0" step="0.01" value="0.10" />
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px">
+      <button class="btn" id="btnPlan">Calcular plan</button>
+
+      <select id="planStatus"
+        style="padding:10px;border-radius:10px;background:#0f172a;color:var(--text);border:1px solid #263043">
+        <option value="">Todos</option>
+        <option value="red">Rojos</option>
+        <option value="yellow">Amarillos</option>
+        <option value="green">Verdes</option>
+      </select>
+
+      <input id="planQ" placeholder="Buscar..."
+        style="flex:1; min-width:220px; padding:10px 12px; border-radius:10px;
+               border:1px solid #263043; background:#0f172a; color:var(--text)" />
+
+      <span id="planMsg" class="status muted"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h1>Resultado — sugerencias de envío</h1>
+    <div id="planWrap" class="muted">Calculá el plan para ver resultados.</div>
+  </section>
+</div>
+
 
   <script>
     const $ = (q) => document.querySelector(q);
@@ -386,6 +429,98 @@
     // init
     writeInputs(getCfg());
     setView('stock');
+
+// ====== Replenishment (Envíos FULL) ======
+let planRows = [];
+
+function getPlanParams(){
+  return {
+    lt:      Number($('#p-lt').value || 0),
+    buffer:  Number($('#p-buffer').value || 0),
+    cover:   Number($('#p-cover').value || 0),
+    min_opd: Number($('#p-minopd').value || 0)
+  };
+}
+
+function filterPlan(rows){
+  const q = ($('#planQ')?.value || '').trim().toLowerCase();
+  const status = $('#planStatus')?.value || '';
+  return (rows || []).filter(r=>{
+    if (status && r.status !== status) return false;
+    if (!q) return true;
+    return ['title','item_id','inventory_id'].some(k => String(r[k] ?? '').toLowerCase().includes(q));
+  });
+}
+
+function renderPlanTable(rows){
+  const wrap = $('#planWrap');
+  if(!rows || !rows.length){
+    wrap.innerHTML = '<span class="muted">Sin filas.</span>';
+    return;
+  }
+
+  const cols = [
+    'status','suggest','dos','rop','target','available_quantity','opd',
+    'orders_30d','visits_30d','conversion_30d','days_no_sale',
+    'title','inventory_id','item_id'
+  ];
+  const label = {
+    status:'estado', suggest:'enviar', dos:'días cob.', rop:'ROP',
+    target:'objetivo', available_quantity:'stock', opd:'ventas/día',
+    orders_30d:'ventas 30d', visits_30d:'visitas 30d',
+    conversion_30d:'conv.', days_no_sale:'sin venta (días)'
+  };
+
+  let html = '<div style="overflow:auto"><table><thead><tr>';
+  html += cols.map(c => `<th>${label[c] || c}</th>`).join('') + '</tr></thead><tbody>';
+
+  for(const r of rows){
+    const conv = (r.conversion_30d != null) ? (Number(r.conversion_30d)*100).toFixed(2)+'%' : '';
+    const stale = r.stale ? '<span class="pill yellow">riesgo 60d</span>' : '';
+    html += '<tr>'
+      + `<td><span class="dot ${r.status}"></span></td>`
+      + `<td><strong>${r.suggest ?? ''}</strong></td>`
+      + `<td>${r.dos ?? ''}</td>`
+      + `<td>${r.rop ?? ''}</td>`
+      + `<td>${r.target ?? ''}</td>`
+      + `<td>${r.available_quantity ?? ''}</td>`
+      + `<td>${r.opd ?? ''}</td>`
+      + `<td>${r.orders_30d ?? ''}</td>`
+      + `<td>${r.visits_30d ?? ''}</td>`
+      + `<td>${conv}</td>`
+      + `<td>${r.days_no_sale ?? ''} ${stale}</td>`
+      + `<td class="col-title">${safe(r.title)}</td>`
+      + `<td>${safe(r.inventory_id)}</td>`
+      + `<td>${safe(r.item_id)}</td>`
+      + '</tr>';
+  }
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+}
+
+// Eventos
+const btnPlan = $('#btnPlan');
+if(btnPlan){
+  btnPlan.addEventListener('click', async ()=>{
+    $('#planMsg').textContent = 'Calculando...'; $('#planMsg').className = 'status';
+    try{
+      const p = getPlanParams();
+      const qs = `?lt=${p.lt}&buffer=${p.buffer}&cover=${p.cover}&min_opd=${p.min_opd}`;
+      const data = await apiFetch('/full/replenishment-plan' + qs);
+      planRows = data.rows || [];
+      renderPlanTable(filterPlan(planRows));
+      $('#planMsg').textContent = `Filas: ${planRows.length}`; $('#planMsg').className = 'status ok';
+    }catch(err){
+      $('#planMsg').textContent = 'Error: ' + err.message; $('#planMsg').className = 'status error';
+    }
+  });
+}
+
+$('#planQ')?.addEventListener('input', ()=> renderPlanTable(filterPlan(planRows)));
+$('#planStatus')?.addEventListener('change', ()=> renderPlanTable(filterPlan(planRows)));
+
+
+    
   </script>
 </body>
 </html>
