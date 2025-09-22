@@ -480,6 +480,11 @@ let planRows = [];
 // Orden inicial (columna y dirección)
 let planSort = { col: 'status', dir: 'asc' };
 
+// Selección de filas (por inventory_id + item_id)
+let selectedKeys = new Set();
+function rowKey(r){ return `${r.inventory_id || ''}__${r.item_id || ''}`; }
+
+    
 // Columnas numéricas para ordenar correctamente
 const planNumericCols = new Set([
   'suggest','dos','rop','target','available_quantity','opd',
@@ -546,32 +551,46 @@ function renderPlanTable(rows){
   // Ordenamos lo que llega (ya filtrado)
   const sorted = sortPlan(rows);
 
+  // Agregamos la columna "pick" al principio
   const cols = [
+    'pick',
     'status','suggest','dos','rop','target','available_quantity','opd',
     'orders_30d','visits_30d','conversion_30d','days_no_sale',
     'title','inventory_id','item_id'
   ];
+
   const label = {
-    status:'estado', suggest:'enviar', dos:'días cob.', rop:'ROP',
+    pick:'✔', status:'estado', suggest:'enviar', dos:'días cob.', rop:'ROP',
     target:'objetivo', available_quantity:'stock', opd:'ventas/día',
     orders_30d:'ventas 30d', visits_30d:'visitas 30d',
     conversion_30d:'conv.', days_no_sale:'sin venta (días)'
   };
 
   let html = '<div class="table-scroll"><table><thead><tr>';
-  html += cols.map(c => {
+
+  // Header: la columna "pick" NO es sortable
+  for (const c of cols){
+    if (c === 'pick'){
+      html += `<th>${label[c]}</th>`;
+      continue;
+    }
     const active = (planSort.col === c);
     const arrow = active ? (planSort.dir === 'asc' ? '▲' : '▼') : '';
-    return `<th class="sortable${active?' active':''}" data-col="${c}">
+    html += `<th class="sortable${active?' active':''}" data-col="${c}">
               ${label[c] || c}<span class="arrow">${arrow}</span>
             </th>`;
-  }).join('');
+  }
   html += '</tr></thead><tbody>';
 
   for(const r of sorted){
     const conv = (r.conversion_30d != null) ? (Number(r.conversion_30d)*100).toFixed(2)+'%' : '';
     const stale = r.stale ? '<span class="pill yellow">riesgo 60d</span>' : '';
+    const k = rowKey(r);
+    const isChecked = selectedKeys.has(k) ? 'checked' : '';
+
     html += '<tr>'
+      // Columna pick (checkbox)
+      + `<td><input type="checkbox" class="pick" data-key="${k}" ${isChecked}></td>`
       + `<td><span class="dot ${r.status}"></span></td>`
       + `<td><strong>${r.suggest ?? ''}</strong></td>`
       + `<td>${r.dos ?? ''}</td>`
@@ -592,7 +611,7 @@ function renderPlanTable(rows){
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 
-  // Click en headers para ordenar/togglear
+  // Click en headers para ordenar/togglear (igual que antes)
   wrap.querySelectorAll('th.sortable').forEach(th=>{
     th.addEventListener('click', ()=>{
       const c = th.dataset.col;
@@ -600,7 +619,6 @@ function renderPlanTable(rows){
         planSort.dir = (planSort.dir === 'asc') ? 'desc' : 'asc';
       } else {
         planSort.col = c;
-        // default: num/estado => desc, textos => asc
         const isNum = planNumericCols.has(c) || c === 'status' || c === 'conversion_30d';
         planSort.dir = isNum ? 'desc' : 'asc';
       }
@@ -610,6 +628,7 @@ function renderPlanTable(rows){
 
   fitPlanHeight();
 }
+
 
 
 
@@ -633,6 +652,15 @@ if(btnPlan){
 
 $('#planQ')?.addEventListener('input', ()=> renderPlanTable(filterPlan(planRows)));
 $('#planStatus')?.addEventListener('change', ()=> renderPlanTable(filterPlan(planRows)));
+// Guardar/actualizar selección al tildar/ destildar
+$('#planWrap')?.addEventListener('change', (e)=>{
+  const t = e.target;
+  if (t && t.matches('input.pick')){
+    const k = t.dataset.key || '';
+    if (t.checked) selectedKeys.add(k);
+    else selectedKeys.delete(k);
+  }
+});
 
 
     
