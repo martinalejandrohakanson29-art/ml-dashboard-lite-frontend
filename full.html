@@ -57,6 +57,22 @@
 .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.8rem;border:1px solid var(--line)}
 .pill.yellow{background:#3f2f1a;color:#fde68a;border-color:#92400e}
 
+
+/* Contenedor con scroll vertical y encabezado sticky */
+.table-scroll{
+  max-height: 70vh;          /* alto visible de la tabla */
+  overflow: auto;            /* scroll dentro del card */
+}
+.table-scroll table{ width:100%; border-collapse:collapse; }
+.table-scroll thead th{
+  position: sticky;
+  top: 0;                    /* se pega arriba del contenedor */
+  background: #111827;       /* mismo fondo que el card */
+  z-index: 2;                /* arriba de las celdas */
+  box-shadow: 0 1px 0 #1f2937;  /* línea inferior para separar */
+}
+
+
     
   </style>
 </head>
@@ -278,7 +294,7 @@
       const rest = all.filter(c => !preferred.includes(c));
       const cols = [...preferred.filter(c => all.includes(c)), ...rest];
 
-      let html = '<div style="overflow:auto"><table><thead><tr>';
+let html = '<div class="table-scroll"><table><thead><tr>';
       html += cols.map(c => {
         const cls = (c === 'title') ? ' class="col-title"' : '';
         const label = rename[c] || c;
@@ -330,7 +346,7 @@
   const cols = [...preferred.filter(c => all.includes(c)), ...rest];
 
   // Armado de tabla
-  let html = '<div style="overflow:auto"><table><thead><tr>';
+let html = '<div class="table-scroll"><table><thead><tr>';
   html += cols.map(c => {
     const cls = (c === 'title') ? ' class="col-title"' : '';
     const label = rename[c] || c;
@@ -471,7 +487,7 @@ function renderPlanTable(rows){
     conversion_30d:'conv.', days_no_sale:'sin venta (días)'
   };
 
-  let html = '<div style="overflow:auto"><table><thead><tr>';
+let html = '<div class="table-scroll"><table><thead><tr>';
   html += cols.map(c => `<th>${label[c] || c}</th>`).join('') + '</tr></thead><tbody>';
 
   for(const r of rows){
