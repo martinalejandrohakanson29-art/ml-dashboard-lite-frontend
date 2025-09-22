@@ -78,6 +78,11 @@
   max-height: 70vh;
 }
 
+    /* Headers clickeables para ordenar */
+th.sortable{ cursor: pointer; user-select: none; }
+th.sortable .arrow{ opacity:.5; margin-left:6px }
+th.sortable.active .arrow{ opacity:1 }
+
     
   </style>
 </head>
@@ -492,13 +497,52 @@ function filterPlan(rows){
   });
 }
 
+let planRows = []; // ya lo tenías
+let planSort = { col: 'status', dir: 'asc' }; // estado inicial de orden
+
+// columnas que se comparan numéricamente
+const planNumericCols = new Set([
+  'suggest','dos','rop','target','available_quantity','opd',
+  'orders_30d','visits_30d','conversion_30d','days_no_sale'
+]);
+
+function planRankStatus(s){
+  return s==='red' ? 0 : s==='yellow' ? 1 : s==='green' ? 2 : 3;
+}
+
+function planGetVal(r, c){
+  if (c === 'status') return planRankStatus(r.status);
+  if (c === 'conversion_30d') return (r.conversion_30d == null ? null : Number(r.conversion_30d));
+  if (planNumericCols.has(c)) return (r[c] == null ? null : Number(r[c]));
+  return (r[c] == null ? '' : String(r[c]).toLowerCase());
+}
+
+function sortPlan(rows){
+  const { col, dir } = planSort;
+  const mult = (dir === 'asc') ? 1 : -1;
+  return [...rows].sort((a,b)=>{
+    let va = planGetVal(a, col), vb = planGetVal(b, col);
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'string' && typeof vb === 'string') {
+      return va.localeCompare(vb) * mult;
+    }
+    return (va < vb ? -1 : va > vb ? 1 : 0) * mult;
+  });
+}
+
+    
 function renderPlanTable(rows){
   const wrap = $('#planWrap');
   if(!rows || !rows.length){
     wrap.innerHTML = '<span class="muted">Sin filas.</span>';
-    fitPlanHeight(); // ajusta altura también sin datos
+    fitPlanHeight();
     return;
   }
+
+  // Ordenamos lo que llega (ya filtrado)
+  const sorted = sortPlan(rows);
 
   const cols = [
     'status','suggest','dos','rop','target','available_quantity','opd',
@@ -513,10 +557,16 @@ function renderPlanTable(rows){
   };
 
   let html = '<div class="table-scroll"><table><thead><tr>';
-  html += cols.map(c => `<th>${label[c] || c}</th>`).join('');
+  html += cols.map(c => {
+    const active = (planSort.col === c);
+    const arrow = active ? (planSort.dir === 'asc' ? '▲' : '▼') : '';
+    return `<th class="sortable${active?' active':''}" data-col="${c}">
+              ${label[c] || c}<span class="arrow">${arrow}</span>
+            </th>`;
+  }).join('');
   html += '</tr></thead><tbody>';
 
-  for(const r of rows){
+  for(const r of sorted){
     const conv = (r.conversion_30d != null) ? (Number(r.conversion_30d)*100).toFixed(2)+'%' : '';
     const stale = r.stale ? '<span class="pill yellow">riesgo 60d</span>' : '';
     html += '<tr>'
@@ -540,9 +590,25 @@ function renderPlanTable(rows){
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 
-  // 👉 que el scroller llene hasta abajo
+  // Click en headers para ordenar/togglear
+  wrap.querySelectorAll('th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const c = th.dataset.col;
+      if (planSort.col === c){
+        planSort.dir = (planSort.dir === 'asc') ? 'desc' : 'asc';
+      } else {
+        planSort.col = c;
+        // default: num/estado => desc, textos => asc
+        const isNum = planNumericCols.has(c) || c === 'status' || c === 'conversion_30d';
+        planSort.dir = isNum ? 'desc' : 'asc';
+      }
+      renderPlanTable(filterPlan(planRows)); // re-render con nuevo orden
+    });
+  });
+
   fitPlanHeight();
 }
+
 
 
 // Eventos
