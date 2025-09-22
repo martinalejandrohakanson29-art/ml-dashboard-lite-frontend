@@ -72,11 +72,11 @@
   box-shadow: 0 1px 0 #1f2937;  /* línea inferior para separar */
 }
 /* El scroller de la tabla del plan ocupa toda la altura disponible */
+/* Alto estable para que no se achique después de buscar/scroll */
 #planCard .table-scroll{
-  height: var(--planH, 70vh);  /* fallback si aún no calculamos */
-  max-height: none;
+  height: 70vh;      /* ~70% de la pantalla */
+  max-height: 70vh;
 }
-
 
     
   </style>
