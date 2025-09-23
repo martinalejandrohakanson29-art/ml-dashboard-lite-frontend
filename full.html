@@ -209,7 +209,6 @@ th.sortable.active .arrow{ opacity:1 }
 
 <div id="selectedWrap" style="margin-top:12px;"></div>
 
-  <section id="planCard" class="card fullbleed">
     
  <section id="planCard" class="card fullbleed">
   <div class="inner">
@@ -667,6 +666,126 @@ $('#planWrap')?.addEventListener('change', (e)=>{
   }
 });
 
+// === Devolver SOLO las filas tildadas ===
+function getSelectedRows(){
+  const set = new Set(selectedKeys || []);
+  return (planRows || []).filter(r => set.has(rowKey(r)));
+}
+
+// === Render de la tabla limpia (lista seleccionada) ===
+function renderSelectedTable(rows){
+  const wrap = $('#selectedWrap');
+  if (!wrap) return;
+
+  if (!rows || !rows.length){
+    wrap.innerHTML = '<div class="muted">No hay ítems seleccionados.</div>';
+    return;
+  }
+
+  let html = `
+    <div class="card">
+      <div class="card-header" style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+        <div><strong>Lista seleccionada (${rows.length})</strong></div>
+        <div style="display:flex;gap:8px;">
+          <button id="btnCopyCsv" class="btn">Copiar CSV</button>
+          <button id="btnClearSelected" class="btn btn-alt">Limpiar selección</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>item_id</th>
+              <th>inventory_id</th>
+              <th>título</th>
+              <th>stock actual</th>
+              <th>cantidad a enviar</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+
+  for (const r of rows){
+    html += `
+      <tr>
+        <td>${safe(r.item_id)}</td>
+        <td>${safe(r.inventory_id)}</td>
+        <td class="col-title">${safe(r.title)}</td>
+        <td>${r.available_quantity ?? ''}</td>
+        <td>${r.suggest ?? ''}</td>
+      </tr>
+    `;
+  }
+
+  html += `
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  wrap.innerHTML = html;
+
+  // Acciones: copiar CSV y limpiar selección
+  $('#btnCopyCsv')?.addEventListener('click', ()=>{
+    const csv = selectedRowsToCsv(rows);
+    copyToClipboard(csv);
+    toast?.('CSV copiado al portapapeles');
+  });
+
+  $('#btnClearSelected')?.addEventListener('click', ()=>{
+    selectedKeys = new Set();
+    renderPlanTable(filterPlan(planRows));   // destilda en la tabla principal
+    wrap.innerHTML = '<div class="muted">Selección limpiada.</div>';
+  });
+}
+
+// === CSV de la selección ===
+function selectedRowsToCsv(rows){
+  const header = ['item_id','inventory_id','titulo','stock_actual','cantidad_enviar'];
+  const lines = [header.join(',')];
+  for (const r of rows){
+    let titulo = String(r.title ?? '').replace(/"/g,'""');
+    if (/[",\n]/.test(titulo)) titulo = `"${titulo}"`;
+    const line = [
+      (r.item_id ?? ''),
+      (r.inventory_id ?? ''),
+      titulo,
+      (r.available_quantity ?? ''),
+      (r.suggest ?? '')
+    ];
+    lines.push(line.join(','));
+  }
+  return lines.join('\n');
+}
+
+// === Copiar al portapapeles (con fallback) ===
+function copyToClipboard(text){
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(()=> fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+// === Botón: Generar lista seleccionada ===
+$('#btnSelected')?.addEventListener('click', ()=>{
+  const rows = getSelectedRows();
+
+  // Si querés filtrar auto los que tengan enviar>0 y stock>0, usá:
+  // const rows2 = rows.filter(r => Number(r.suggest||0) > 0 && Number(r.available_quantity||0) > 0);
+  // renderSelectedTable(rows2);
+
+  renderSelectedTable(rows);
+});
 
     
   </script>
