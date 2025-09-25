@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Envíos Andreani – Etiquetas</title>
+  <style>
+    :root{--bg:#0b1220;--card:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--btn:#f8fafc;--ink:#0b1220}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+    .wrap{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+    h1{margin:0 0 8px 0;font-size:1.25rem}
+    .muted{color:var(--muted);font-size:.92rem;margin:0 0 8px 0}
+    textarea{width:100%;min-height:240px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:var(--btn);color:var(--ink);font-weight:700;cursor:pointer}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;max-height:320px;overflow:auto}
+    .pill{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.85rem}
+    .ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399}
+    .warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
+    .bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+    .field{display:flex;flex-direction:column;gap:4px}
+    .field input{width:100%;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px}
+    .small{font-size:.85rem;color:var(--muted)}
+    .hr{height:1px;background:#1f2937;margin:12px 0}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <!-- Panel izquierdo: entrada -->
+    <section class="card">
+      <h1>Entrada cruda</h1>
+      <p class="muted">Pegá el texto del cliente. Luego presioná <strong>Procesar con IA</strong>.</p>
+      <textarea id="raw" placeholder="Ej: Nombre completo: ... DNI: ... Domicilio: ... Ciudad: ... Provincia: ... Teléfono: ... E-mail: ... Código postal: ... Referencias: ..."></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btnProcess">⚙️ Procesar con IA</button>
+        <button class="btn" id="btnConfirm" disabled>✅ Confirmar y agregar a hoja</button>
+        <button class="btn" id="btnDownload">⬇️ Descargar XLSX</button>
+      </div>
+      <div class="hr"></div>
+      <div class="row">
+        <div class="field" style="min-width:280px">
+          <label class="small">Endpoint de proceso (n8n)</label>
+          <input id="EP_PROCESS" placeholder="https://tu-n8n/webhook/andreani/process" />
+        </div>
+        <div class="field" style="min-width:280px">
+          <label class="small">Endpoint de confirmación (append)</label>
+          <input id="EP_APPEND" placeholder="https://tu-n8n/webhook/andreani/append" />
+        </div>
+        <div class="field" style="min-width:280px">
+          <label class="small">Endpoint de descarga XLSX</label>
+          <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/webhook/andreani/download" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel derecho: salida / validación -->
+    <section class="card">
+      <h1>Previsualización</h1>
+      <p class="muted">Vas a ver el JSON normalizado + estado de validación del CP. Si está OK, confirmá para que se agregue a la hoja <em>Carga</em>.</p>
+
+      <div class="row" style="align-items:center;margin:6px 0 10px 0">
+        <span id="badge" class="pill warn">Esperando…</span>
+        <span id="summary" class="small">—</span>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label class="small">Provincia / Localidad / CP (compuesto)</label>
+          <input id="plc" readonly />
+        </div>
+        <div class="field">
+          <label class="small">Sugerencias (si REVISAR/CORREGIDO)</label>
+          <input id="sugs" readonly />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <pre id="jsonOut">{ }</pre>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const badge = $("badge");
+    const summary = $("summary");
+    const jsonOut = $("jsonOut");
+    const plc = $("plc");
+    const sugs = $("sugs");
+    const btnProcess = $("btnProcess");
+    const btnConfirm = $("btnConfirm");
+
+    function setStatus(state, text){
+      badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
+      badge.textContent = state || '—';
+      summary.textContent = text || '';
+    }
+
+    function buildPLC(d){
+      const prov = (d.provincia||'').toString().toUpperCase();
+      const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
+      const cp   = (d.cp||'').toString();
+      return `${prov} / ${loc} / ${cp}`;
+    }
+
+    async function callJSON(url, body){
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const ct = res.headers.get('content-type')||'';
+      if (!ct.includes('application/json')) {
+        // devolver texto para debug
+        const t = await res.text();
+        throw new Error(`Respuesta no JSON (HTTP ${res.status}):\n`+t);
+      }
+      if (!res.ok) {
+        const j = await res.json().catch(()=>({}));
+        throw new Error(j.message || `HTTP ${res.status}`);
+      }
+      return res.json();
+    }
+
+    btnProcess.onclick = async () => {
+      try{
+        setStatus('…','Procesando');
+        const ep = $("EP_PROCESS").value.trim();
+        if (!ep) throw new Error('Completá el endpoint de proceso');
+        const raw = $("raw").value.trim();
+        if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
+
+        const payload = { raw }; // el webhook /process debe aceptar {raw}
+        const out = await callJSON(ep, payload);
+        // esperamos que el webhook devuelva el JSON normalizado + validación
+        const d = out.data || out; // flex
+        jsonOut.textContent = JSON.stringify(d, null, 2);
+        plc.value = buildPLC(d);
+        const estado = d.validacion_cp || 'OK';
+        const info = d.motivo_validacion || '';
+        const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
+        sugs.value = sug;
+        setStatus(estado, info);
+        btnConfirm.disabled = (estado === 'REVISAR'); // si hay que revisar, no dejamos confirmar
+      }catch(err){
+        setStatus('REVISAR', err.message);
+        jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
+        btnConfirm.disabled = true;
+      }
+    };
+
+    btnConfirm.onclick = async () => {
+      try{
+        const ep = $("EP_APPEND").value.trim();
+        if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
+        const d = JSON.parse(jsonOut.textContent || '{}');
+        // el webhook /append debería escribir en la hoja Carga y devolver {ok:true}
+        const res = await callJSON(ep, { data: d });
+        setStatus('OK', 'Agregado a la hoja Carga');
+        // limpiar para el siguiente
+        $("raw").value = '';
+        // opcional: mantener jsonOut si querés
+      }catch(err){
+        setStatus('REVISAR', err.message);
+      }
+    };
+
+    $("btnDownload").onclick = async () => {
+      try {
+        const ep = $("EP_DOWNLOAD").value.trim();
+        if (!ep) throw new Error('Completá el endpoint de descarga');
+        const a = document.createElement('a');
+        a.href = ep; // debe responder binario XLSX con Content-Disposition
+        a.download = '';
+        document.body.appendChild(a); a.click(); a.remove();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+  </script>
+</body>
+</html>
