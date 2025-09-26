@@ -15,7 +15,7 @@
     textarea{width:100%;min-height:240px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical}
     .row{display:flex;gap:10px;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:var(--btn);color:var(--ink);font-weight:700;cursor:pointer}
-    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    .btn:hover{transform:translateY{-}1px;box-shadow:0 6px 16px rgba(0,0,0,.25)}
     pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;max-height:320px;overflow:auto}
     .pill{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.85rem}
     .ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399}
@@ -30,7 +30,6 @@
 </head>
 <body>
   <main class="wrap">
-    <!-- Panel izquierdo: entrada -->
     <section class="card">
       <h1>Entrada cruda</h1>
       <p class="muted">Pegá el texto del cliente. Luego presioná <strong>Procesar con IA</strong>.</p>
@@ -57,16 +56,13 @@
       </div>
     </section>
 
-    <!-- Panel derecho: salida / validación -->
     <section class="card">
       <h1>Previsualización</h1>
       <p class="muted">Vas a ver el JSON normalizado + estado de validación del CP. Si está OK, confirmá para que se agregue a la hoja <em>Carga</em>.</p>
-
       <div class="row" style="align-items:center;margin:6px 0 10px 0">
         <span id="badge" class="pill warn">Esperando…</span>
         <span id="summary" class="small">—</span>
       </div>
-
       <div class="grid">
         <div class="field">
           <label class="small">Provincia / Localidad / CP (compuesto)</label>
@@ -77,112 +73,47 @@
           <input id="sugs" readonly />
         </div>
       </div>
-
       <div class="hr"></div>
       <pre id="jsonOut">{ }</pre>
     </section>
   </main>
 
- <script>
-  const $ = (id) => document.getElementById(id);
-  const badge = $("badge");
-  const summary = $("summary");
-  const jsonOut = $("jsonOut");
-  const plc = $("plc");
-  const sugs = $("sugs");
-  const btnProcess = $("btnProcess");
-  const btnConfirm = $("btnConfirm");
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const badge = $("badge");
+    const summary = $("summary");
+    const jsonOut = $("jsonOut");
+    const plc = $("plc");
+    const sugs = $("sugs");
+    const btnProcess = $("btnProcess");
+    const btnConfirm = $("btnConfirm");
 
-  function setStatus(state, text){
-    badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
-    badge.textContent = state || '—';
-    summary.textContent = text || '';
-  }
-
-  function buildPLC(d){
-    const prov = (d.provincia||'').toString().toUpperCase();
-    const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
-    const cp   = (d.cp||'').toString();
-    return `${prov} / ${loc} / ${cp}`;
-  }
-
-  async function callJSON(url, body){
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body ?? {})
-    });
-
-    const ct = res.headers.get('content-type') || '';
-    const text = await res.text(); // leemos como texto primero
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${text?.slice(0,400) || '(sin cuerpo)'}`);
-    }
-    if (!ct.includes('application/json')) {
-      throw new Error(`Respuesta no JSON: ${text?.slice(0,400) || '(sin cuerpo)'}`);
-    }
-    if (!text) {
-      throw new Error('El servidor respondió JSON vacío');
+    function setStatus(state, text){
+      badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
+      badge.textContent = state || '—';
+      summary.textContent = text || '';
     }
 
-    try { return JSON.parse(text); }
-    catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
-  }
-
-  btnProcess.onclick = async () => {
-    try{
-      setStatus('…','Procesando');
-      const ep = $("EP_PROCESS").value.trim();
-      if (!ep) throw new Error('Completá el endpoint de proceso');
-      const raw = $("raw").value.trim();
-      if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
-
-      const payload = { raw };
-      const out = await callJSON(ep, payload);
-      const d = out.data || out; // flex
-      jsonOut.textContent = JSON.stringify(d, null, 2);
-      plc.value = buildPLC(d);
-      const estado = d.validacion_cp || 'OK';
-      const info = d.motivo_validacion || '';
-      const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
-      sugs.value = sug;
-      setStatus(estado, info);
-      btnConfirm.disabled = (estado === 'REVISAR');
-    }catch(err){
-      setStatus('REVISAR', err.message);
-      jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
-      btnConfirm.disabled = true;
+    function buildPLC(d){
+      const prov = (d.provincia||'').toString().toUpperCase();
+      const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
+      const cp   = (d.cp||'').toString();
+      return `${prov} / ${loc} / ${cp}`;
     }
-  };
 
-  btnConfirm.onclick = async () => {
-    try{
-      const ep = $("EP_APPEND").value.trim();
-      if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
-      const d = JSON.parse(jsonOut.textContent || '{}');
-      const res = await callJSON(ep, { data: d });
-      setStatus('OK', 'Agregado a la hoja Carga');
-      $("raw").value = '';
-    }catch(err){
-      setStatus('REVISAR', err.message);
+    async function callJSON(url, body){
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body ?? {})
+      });
+      const ct = res.headers.get('content-type') || '';
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text?.slice(0,400) || '(sin cuerpo)'}`);
+      if (!ct.includes('application/json')) throw new Error(`Respuesta no JSON: ${text?.slice(0,400) || '(sin cuerpo)'}`);
+      if (!text) throw new Error('El servidor respondió JSON vacío');
+      try { return JSON.parse(text); } catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
     }
-  };
-
-  $("btnDownload").onclick = async () => {
-    try {
-      const ep = $("EP_DOWNLOAD").value.trim();
-      if (!ep) throw new Error('Completá el endpoint de descarga');
-      const a = document.createElement('a');
-      a.href = ep;        // debe responder binario XLSX
-      a.download = '';
-      document.body.appendChild(a); a.click(); a.remove();
-    } catch (e) {
-      alert(e.message);
-    }
-  };
-</script>
-
 
     btnProcess.onclick = async () => {
       try{
@@ -192,10 +123,9 @@
         const raw = $("raw").value.trim();
         if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
 
-        const payload = { raw }; // el webhook /process debe aceptar {raw}
+        const payload = { raw };
         const out = await callJSON(ep, payload);
-        // esperamos que el webhook devuelva el JSON normalizado + validación
-        const d = out.data || out; // flex
+        const d = out.data || out;
         jsonOut.textContent = JSON.stringify(d, null, 2);
         plc.value = buildPLC(d);
         const estado = d.validacion_cp || 'OK';
@@ -203,7 +133,7 @@
         const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
         sugs.value = sug;
         setStatus(estado, info);
-        btnConfirm.disabled = (estado === 'REVISAR'); // si hay que revisar, no dejamos confirmar
+        btnConfirm.disabled = (estado === 'REVISAR');
       }catch(err){
         setStatus('REVISAR', err.message);
         jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
@@ -216,12 +146,9 @@
         const ep = $("EP_APPEND").value.trim();
         if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
         const d = JSON.parse(jsonOut.textContent || '{}');
-        // el webhook /append debería escribir en la hoja Carga y devolver {ok:true}
-        const res = await callJSON(ep, { data: d });
+        await callJSON(ep, { data: d });
         setStatus('OK', 'Agregado a la hoja Carga');
-        // limpiar para el siguiente
         $("raw").value = '';
-        // opcional: mantener jsonOut si querés
       }catch(err){
         setStatus('REVISAR', err.message);
       }
@@ -232,7 +159,7 @@
         const ep = $("EP_DOWNLOAD").value.trim();
         if (!ep) throw new Error('Completá el endpoint de descarga');
         const a = document.createElement('a');
-        a.href = ep; // debe responder binario XLSX con Content-Disposition
+        a.href = ep;
         a.download = '';
         document.body.appendChild(a); a.click(); a.remove();
       } catch (e) {
