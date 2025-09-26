@@ -83,30 +83,29 @@
     </section>
   </main>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
-    const badge = $("badge");
-    const summary = $("summary");
-    const jsonOut = $("jsonOut");
-    const plc = $("plc");
-    const sugs = $("sugs");
-    const btnProcess = $("btnProcess");
-    const btnConfirm = $("btnConfirm");
+ <script>
+  const $ = (id) => document.getElementById(id);
+  const badge = $("badge");
+  const summary = $("summary");
+  const jsonOut = $("jsonOut");
+  const plc = $("plc");
+  const sugs = $("sugs");
+  const btnProcess = $("btnProcess");
+  const btnConfirm = $("btnConfirm");
 
-    function setStatus(state, text){
-      badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
-      badge.textContent = state || '—';
-      summary.textContent = text || '';
-    }
+  function setStatus(state, text){
+    badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
+    badge.textContent = state || '—';
+    summary.textContent = text || '';
+  }
 
-    function buildPLC(d){
-      const prov = (d.provincia||'').toString().toUpperCase();
-      const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
-      const cp   = (d.cp||'').toString();
-      return `${prov} / ${loc} / ${cp}`;
-    }
+  function buildPLC(d){
+    const prov = (d.provincia||'').toString().toUpperCase();
+    const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
+    const cp   = (d.cp||'').toString();
+    return `${prov} / ${loc} / ${cp}`;
+  }
 
-<script>
   async function callJSON(url, body){
     const res = await fetch(url, {
       method: 'POST',
@@ -115,10 +114,9 @@
     });
 
     const ct = res.headers.get('content-type') || '';
-    const text = await res.text();              // leemos SIEMPRE como texto primero
+    const text = await res.text(); // leemos como texto primero
 
     if (!res.ok) {
-      // si hay error HTTP, devolvemos texto para que lo veas en pantalla
       throw new Error(`HTTP ${res.status}: ${text?.slice(0,400) || '(sin cuerpo)'}`);
     }
     if (!ct.includes('application/json')) {
@@ -128,13 +126,61 @@
       throw new Error('El servidor respondió JSON vacío');
     }
 
-    // ahora sí, parseamos
-    let j;
-    try { j = JSON.parse(text); }
+    try { return JSON.parse(text); }
     catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
-
-    return j;
   }
+
+  btnProcess.onclick = async () => {
+    try{
+      setStatus('…','Procesando');
+      const ep = $("EP_PROCESS").value.trim();
+      if (!ep) throw new Error('Completá el endpoint de proceso');
+      const raw = $("raw").value.trim();
+      if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
+
+      const payload = { raw };
+      const out = await callJSON(ep, payload);
+      const d = out.data || out; // flex
+      jsonOut.textContent = JSON.stringify(d, null, 2);
+      plc.value = buildPLC(d);
+      const estado = d.validacion_cp || 'OK';
+      const info = d.motivo_validacion || '';
+      const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
+      sugs.value = sug;
+      setStatus(estado, info);
+      btnConfirm.disabled = (estado === 'REVISAR');
+    }catch(err){
+      setStatus('REVISAR', err.message);
+      jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
+      btnConfirm.disabled = true;
+    }
+  };
+
+  btnConfirm.onclick = async () => {
+    try{
+      const ep = $("EP_APPEND").value.trim();
+      if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
+      const d = JSON.parse(jsonOut.textContent || '{}');
+      const res = await callJSON(ep, { data: d });
+      setStatus('OK', 'Agregado a la hoja Carga');
+      $("raw").value = '';
+    }catch(err){
+      setStatus('REVISAR', err.message);
+    }
+  };
+
+  $("btnDownload").onclick = async () => {
+    try {
+      const ep = $("EP_DOWNLOAD").value.trim();
+      if (!ep) throw new Error('Completá el endpoint de descarga');
+      const a = document.createElement('a');
+      a.href = ep;        // debe responder binario XLSX
+      a.download = '';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
 </script>
 
 
