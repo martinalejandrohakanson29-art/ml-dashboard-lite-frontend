@@ -30,6 +30,13 @@
 .chip{border-radius:999px;padding:6px 10px;font-size:.85rem;font-weight:700}
 .chip.bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
 .chip.warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
+.alerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.chip{border-radius:999px;padding:6px 10px;font-size:.85rem;font-weight:700}
+.chip.bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
+.chip.warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.controls .field{gap:2px}
+.controls .field input{height:36px}
 </style>
 </head>
 <body>
@@ -63,12 +70,19 @@
     </section>
 
     <!-- Derecha: Previsualización (payload final) -->
-    <section class="card">
+    <section class=\"card\">
       <h1>Previsualización</h1>
+      <!-- Controles 2B: defaults editables -->
+      <div class="controls">
+        <div class="field"><label class="small">Peso (grs)</label><input id="peso_grs" type="number" placeholder="1000" /></div>
+        <div class="field"><label class="small">Alto (cm)</label><input id="alto_cm" type="number" placeholder="10" /></div>
+        <div class="field"><label class="small">Ancho (cm)</label><input id="ancho_cm" type="number" placeholder="10" /></div>
+        <div class="field"><label class="small">Valor declarado ($)</label><input id="valor_declarado" type="number" placeholder="50000" /></div>
+      </div>
       <!-- Avisos de faltantes (2A) -->
-      <div id="alerts" class="alerts"></div>
+      <div id=\"alerts\" class=\"alerts\"></div>
       <!-- JSON final -->
-      <pre id="jsonOut">{ }</pre>
+      <pre id=\"jsonOut\">{ }</pre>
 
       <!-- Debajo, estado + detalles para revisar -->
       <div class="hr"></div>
@@ -126,10 +140,45 @@
     function toFinalPayload(d){
       const keep = [
         'peso_grs','alto_cm','ancho_cm','profundidad_cm','valor_declarado',
-        'nombre','apellido','dni','email','cel_codigo','cel_numero',
+        'nombre','apellido','dni','email','tel_codigo','tel_numero',
         'calle','numero','depto','ciudad','partido_o_localidad','provincia','cp','referencias'
       ];
       const src = { ...d };
+      if (!src.tel_codigo && src.cel_codigo) src.tel_codigo = src.cel_codigo;
+      if (!src.tel_numero && src.cel_numero) src.tel_numero = src.cel_numero;
+      const out = {};
+      keep.forEach(k => { if (k in src) out[k] = src[k]; });
+      return out;
+    }
+
+    // 2B: defaults para dimensiones y valor declarado
+    const DEFAULTS = { peso_grs: 1000, alto_cm: 10, ancho_cm: 10, valor_declarado: 50000 };
+    function applyDefaults(finalD){
+      for (const k of Object.keys(DEFAULTS)){
+        const v = finalD[k];
+        if (v === undefined || v === null || (typeof v === 'string' && v.trim() === '')){
+          finalD[k] = DEFAULTS[k];
+        }
+      }
+      return finalD;
+    }
+
+    function writeControls(finalD){
+      const setNum = (id, val) => { const el = document.getElementById(id); if (el) el.value = (val ?? ''); };
+      setNum('peso_grs', finalD.peso_grs ?? '');
+      setNum('alto_cm', finalD.alto_cm ?? '');
+      setNum('ancho_cm', finalD.ancho_cm ?? '');
+      setNum('valor_declarado', finalD.valor_declarado ?? '');
+    }
+
+    function readControlsInto(finalD){
+      const readNum = (id) => { const el = document.getElementById(id); if (!el) return undefined; const n = Number(el.value); return Number.isFinite(n) && n>0 ? n : undefined; };
+      const p = readNum('peso_grs'); if (p !== undefined) finalD.peso_grs = p;
+      const a = readNum('alto_cm'); if (a !== undefined) finalD.alto_cm = a;
+      const an = readNum('ancho_cm'); if (an !== undefined) finalD.ancho_cm = an;
+      const vd = readNum('valor_declarado'); if (vd !== undefined) finalD.valor_declarado = vd;
+      return finalD;
+    };
       if (!src.cel_codigo && src.tel_codigo) src.cel_codigo = src.tel_codigo;
       if (!src.cel_numero && src.tel_numero) src.cel_numero = src.tel_numero;
       const out = {};
@@ -141,13 +190,24 @@
       const miss = [];
       const has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
       if (!has(finalD.dni)) miss.push('Falta DNI');
-      const telOK = has(finalD.cel_codigo) && has(finalD.cel_numero);
+      const telOK = has(finalD.tel_codigo) && has(finalD.tel_numero);
       if (!telOK) miss.push('Falta teléfono (código y número)');
-      const numero = String(finalD.numero ?? '').trim();
-      if (!numero || /^0+$/.test(numero)) miss.push('Falta altura de calle');
       const email = String(finalD.email || '');
       if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o inválido');
+      if (!has(finalD.numero)) miss.push('Falta altura de calle'); // "0" no entra acá
       return miss;
+    }
+    function getWarnings(finalD){
+      const warns = [];
+      const numero = String(finalD.numero ?? '').trim();
+      if (numero === '0') warns.push('Altura no provista (se usa 0)');
+      return warns;
+    }
+    function renderAlerts(miss, warns){
+      if (!alerts) return;
+      alerts.innerHTML = '';
+      (warns||[]).forEach(w => { const s=document.createElement('span'); s.className='chip warn'; s.textContent=w; alerts.appendChild(s); });
+      (miss||[]).forEach(m => { const s=document.createElement('span'); s.className='chip bad'; s.textContent=m; alerts.appendChild(s); });
     }
 
     function renderAlerts(miss){
@@ -198,12 +258,13 @@
         setStatus(estado, info || '');
 
         // final
-        const finalD = toFinalPayload(d);
+        let finalD = toFinalPayload(d);
+        finalD = applyDefaults(finalD);
+        writeControls(finalD);
         if (jsonOut) jsonOut.textContent = JSON.stringify(finalD, null, 2);
-
-        // avisos
         const miss = getMissing(finalD);
-        renderAlerts(miss);
+        const warns = getWarnings(finalD);
+        renderAlerts(miss, warns);
         const mustReview = (estado === 'REVISAR') || miss.length > 0;
         if (btnConfirm) btnConfirm.disabled = mustReview;
       }catch(err){
@@ -247,6 +308,23 @@
     if (btnProcess) btnProcess.addEventListener('click', onProcess);
     if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
     if (btnDownload) btnDownload.addEventListener('click', onDownload);
+
+    // actualizar JSON cuando cambian los controles
+    ['peso_grs','alto_cm','ancho_cm','valor_declarado'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        try{
+          const current = JSON.parse(jsonOut?.textContent || '{}');
+          readControlsInto(current);
+          if (jsonOut) jsonOut.textContent = JSON.stringify(applyDefaults(current), null, 2);
+          const miss = getMissing(current);
+          const warns = getWarnings(current);
+          renderAlerts(miss, warns);
+          if (btnConfirm) btnConfirm.disabled = miss.length > 0;
+        }catch(e){ /* noop */ }
+      });
+    });
 
     console.log('[Andreani Front] wired');
   });
