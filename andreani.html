@@ -26,18 +26,14 @@
     .field input{width:100%;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px}
     .small{font-size:.85rem;color:var(--muted)}
     .hr{height:1px;background:#1f2937;margin:12px 0}
-  .alerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-.chip{border-radius:999px;padding:6px 10px;font-size:.85rem;font-weight:700}
-.chip.bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
-.chip.warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
-.alerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-.chip{border-radius:999px;padding:6px 10px;font-size:.85rem;font-weight:700}
-.chip.bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
-.chip.warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
-.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
-.controls .field{gap:2px}
-.controls .field input{height:36px}
-</style>
+    .alerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+    .chip{border-radius:999px;padding:6px 10px;font-size:.85rem;font-weight:700}
+    .chip.bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
+    .chip.warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
+    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+    .controls .field{gap:2px}
+    .controls .field input{height:36px}
+  </style>
 </head>
 <body>
   <main class="wrap">
@@ -70,7 +66,7 @@
     </section>
 
     <!-- Derecha: Previsualización (payload final) -->
-    <section class=\"card\">
+    <section class="card">
       <h1>Previsualización</h1>
       <!-- Controles 2B: defaults editables -->
       <div class="controls">
@@ -80,9 +76,9 @@
         <div class="field"><label class="small">Valor declarado ($)</label><input id="valor_declarado" type="number" placeholder="50000" /></div>
       </div>
       <!-- Avisos de faltantes (2A) -->
-      <div id=\"alerts\" class=\"alerts\"></div>
+      <div id="alerts" class="alerts"></div>
       <!-- JSON final -->
-      <pre id=\"jsonOut\">{ }</pre>
+      <pre id="jsonOut">{ }</pre>
 
       <!-- Debajo, estado + detalles para revisar -->
       <div class="hr"></div>
@@ -178,12 +174,6 @@
       const an = readNum('ancho_cm'); if (an !== undefined) finalD.ancho_cm = an;
       const vd = readNum('valor_declarado'); if (vd !== undefined) finalD.valor_declarado = vd;
       return finalD;
-    };
-      if (!src.cel_codigo && src.tel_codigo) src.cel_codigo = src.tel_codigo;
-      if (!src.cel_numero && src.tel_numero) src.cel_numero = src.tel_numero;
-      const out = {};
-      keep.forEach(k => { if (k in src) out[k] = src[k]; });
-      return out;
     }
 
     function getMissing(finalD){
@@ -208,18 +198,6 @@
       alerts.innerHTML = '';
       (warns||[]).forEach(w => { const s=document.createElement('span'); s.className='chip warn'; s.textContent=w; alerts.appendChild(s); });
       (miss||[]).forEach(m => { const s=document.createElement('span'); s.className='chip bad'; s.textContent=m; alerts.appendChild(s); });
-    }
-
-    function renderAlerts(miss){
-      if (!alerts) return;
-      alerts.innerHTML = '';
-      if (!miss || miss.length === 0) return;
-      miss.forEach(m => {
-        const s = document.createElement('span');
-        s.className = 'chip bad';
-        s.textContent = m;
-        alerts.appendChild(s);
-      });
     }
 
     async function callJSON(url, body){
@@ -328,6 +306,6 @@
 
     console.log('[Andreani Front] wired');
   });
-</script>
+  </script>
 </body>
 </html>
