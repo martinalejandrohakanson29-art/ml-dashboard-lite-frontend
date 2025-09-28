@@ -90,18 +90,20 @@
   </main>
 
   <script>
+  window.addEventListener('DOMContentLoaded', () => {
     const $ = (id) => document.getElementById(id);
-    // helpers seguros por si algún elemento no está aún en el DOM
-    function safeText(el, value){ if(el) el.textContent = value; }
-    function safeVal(el, value){ if(el) el.value = value; }
     const badge = $("badge");
     const summary = $("summary");
     const jsonOut = $("jsonOut");
     const plc = $("plc");
     const sugs = $("sugs");
+    const alerts = $("alerts");
     const btnProcess = $("btnProcess");
     const btnConfirm = $("btnConfirm");
-    const alerts = $("alerts");
+    const btnDownload = $("btnDownload");
+
+    const safeText = (el, value) => { if (el) el.textContent = value; };
+    const safeVal  = (el, value) => { if (el) el.value = value; };
 
     function setStatus(state, text){
       if (badge) badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
@@ -116,7 +118,6 @@
       return `${prov} / ${loc} / ${cp}`;
     }
 
-    // Dejar solo el payload final que vamos a enviar a APPEND
     function toFinalPayload(d){
       const omit = new Set([
         'validacion_cp','cp_sugerido','localidad_sugerida','motivo_validacion',
@@ -129,7 +130,6 @@
       return out;
     }
 
-    // 2A: detectar faltantes en el payload final
     function getMissing(finalD){
       const miss = [];
       const has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
@@ -138,11 +138,9 @@
       const telOK = has(finalD.cel_codigo) && has(finalD.cel_numero);
       if (!telOK) miss.push('Falta teléfono (código y número)');
 
-      // considerar '0' como faltante para número de puerta
       const numero = String(finalD.numero ?? '').trim();
       if (!numero || /^0+$/.test(numero)) miss.push('Falta número de puerta');
 
-      // email básico
       const email = String(finalD.email || '');
       const emailOK = /.+@.+\..+/.test(email);
       if (!emailOK) miss.push('Email faltante o inválido');
@@ -150,6 +148,7 @@
     }
 
     function renderAlerts(miss){
+      if (!alerts) return;
       alerts.innerHTML = '';
       if (!miss || miss.length === 0) return;
       miss.forEach(m => {
@@ -174,12 +173,12 @@
       try { return JSON.parse(text); } catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
     }
 
-    btnProcess.onclick = async () => {
+    btnProcess?.addEventListener('click', async () => {
       try{
         setStatus('…','Procesando');
-        const ep = $("EP_PROCESS").value.trim();
+        const ep = $("EP_PROCESS")?.value.trim() || '';
         if (!ep) throw new Error('Completá el endpoint de proceso');
-        const raw = $("raw").value.trim();
+        const raw = $("raw")?.value.trim() || '';
         if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
 
         const payload = { body: { raw } };
@@ -201,62 +200,37 @@
 
         // mostrar SOLO el payload final que se manda a append
         const finalD = toFinalPayload(d);
-        jsonOut && (jsonOut.textContent = JSON.stringify(finalD, null, 2));
+        if (jsonOut) jsonOut.textContent = JSON.stringify(finalD, null, 2);
 
         // 2A: avisos de faltantes
         const miss = getMissing(finalD);
         renderAlerts(miss);
         const mustReview = (estado === 'REVISAR') || miss.length > 0;
-        btnConfirm.disabled = mustReview;
+        if (btnConfirm) btnConfirm.disabled = mustReview;
       }catch(err){
         setStatus('REVISAR', err.message);
         if (jsonOut) jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
-        btnConfirm.disabled = true;
+        if (btnConfirm) btnConfirm.disabled = true;
       }
-    };
-        const out = await callJSON(ep, payload);
-        const d = out.data || out; // respuesta completa
+    });
 
-        // construir vista compuesta + estado usando d completo
-        plc.value = buildPLC(d);
-        const estado = d.validacion_cp || 'OK';
-        const info = d.motivo_validacion || '';
-        const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
-        sugs.value = sug;
-        setStatus(estado, info || '');
-
-        // mostrar SOLO el payload final que se manda a append
-        const finalD = toFinalPayload(d);
-        jsonOut.textContent = JSON.stringify(finalD, null, 2);
-
-        // 2A: avisos de faltantes
-        const miss = getMissing(finalD);
-        renderAlerts(miss);
-        const mustReview = (estado === 'REVISAR') || miss.length > 0;
-        btnConfirm.disabled = mustReview;
-      }catch(err){
-        setStatus('REVISAR', err.message);
-        jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
-        btnConfirm.disabled = true;
-      }
-    };
-
-    btnConfirm.onclick = async () => {
+    btnConfirm?.addEventListener('click', async () => {
       try{
-        const ep = $("EP_APPEND").value.trim();
+        const ep = $("EP_APPEND")?.value.trim() || '';
         if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
-        const d = JSON.parse(jsonOut.textContent || '{}'); // ya es el payload final
+        const d = JSON.parse((jsonOut?.textContent) || '{}'); // ya es el payload final
         await callJSON(ep, { data: d });
         setStatus('OK', 'Agregado a la hoja Carga');
-        $("raw").value = '';
+        const rawEl = $("raw");
+        if (rawEl) rawEl.value = '';
       }catch(err){
         setStatus('REVISAR', err.message);
       }
-    };
+    });
 
-    $("btnDownload").onclick = async () => {
+    btnDownload?.addEventListener('click', async () => {
       try {
-        const ep = $("EP_DOWNLOAD").value.trim();
+        const ep = $("EP_DOWNLOAD")?.value.trim() || '';
         if (!ep) throw new Error('Completá el endpoint de descarga');
         const a = document.createElement('a');
         a.href = ep;
@@ -265,7 +239,8 @@
       } catch (e) {
         alert(e.message);
       }
-    };
-  </script>
+    });
+  });
+</script>
 </body>
 </html>
