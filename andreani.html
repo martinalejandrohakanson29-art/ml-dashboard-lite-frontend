@@ -91,7 +91,14 @@
 
   <script>
   window.addEventListener('DOMContentLoaded', () => {
+    console.log('[Andreani Front] init');
+
+    // ===== util =====
     const $ = (id) => document.getElementById(id);
+    const safeText = (el, v) => { if (el) el.textContent = v; };
+    const safeVal  = (el, v) => { if (el) el.value = v; };
+
+    // ===== refs =====
     const badge = $("badge");
     const summary = $("summary");
     const jsonOut = $("jsonOut");
@@ -102,15 +109,12 @@
     const btnConfirm = $("btnConfirm");
     const btnDownload = $("btnDownload");
 
-    const safeText = (el, value) => { if (el) el.textContent = value; };
-    const safeVal  = (el, value) => { if (el) el.value = value; };
-
+    // ===== state helpers =====
     function setStatus(state, text){
       if (badge) badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
       safeText(badge, state || '—');
       safeText(summary, text || '');
     }
-
     function buildPLC(d){
       const prov = (d.provincia||'').toString().toUpperCase();
       const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
@@ -118,28 +122,18 @@
       return `${prov} / ${loc} / ${cp}`;
     }
 
+    // whitelist → payload final
     function toFinalPayload(d){
-      // Lista blanca de campos que queremos en el payload final
       const keep = [
         'peso_grs','alto_cm','ancho_cm','profundidad_cm','valor_declarado',
         'nombre','apellido','dni','email','cel_codigo','cel_numero',
         'calle','numero','depto','ciudad','partido_o_localidad','provincia','cp','referencias'
       ];
-
-      // Normalizar tel_* -> cel_* antes de construir
       const src = { ...d };
       if (!src.cel_codigo && src.tel_codigo) src.cel_codigo = src.tel_codigo;
       if (!src.cel_numero && src.tel_numero) src.cel_numero = src.tel_numero;
-
       const out = {};
-      for (const k of keep){
-        if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
-      }
-      return out;
-    };
-      for (const k of Object.keys(d||{})){
-        if (!omit.has(k) && !k.startsWith('_')) out[k] = d[k];
-      }
+      keep.forEach(k => { if (k in src) out[k] = src[k]; });
       return out;
     }
 
@@ -147,16 +141,12 @@
       const miss = [];
       const has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
       if (!has(finalD.dni)) miss.push('Falta DNI');
-
       const telOK = has(finalD.cel_codigo) && has(finalD.cel_numero);
       if (!telOK) miss.push('Falta teléfono (código y número)');
-
       const numero = String(finalD.numero ?? '').trim();
       if (!numero || /^0+$/.test(numero)) miss.push('Falta número de puerta');
-
       const email = String(finalD.email || '');
-      const emailOK = /.+@.+\..+/.test(email);
-      if (!emailOK) miss.push('Email faltante o inválido');
+      if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o inválido');
       return miss;
     }
 
@@ -186,7 +176,7 @@
       try { return JSON.parse(text); } catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
     }
 
-    btnProcess?.addEventListener('click', async () => {
+    async function onProcess(){
       try{
         setStatus('…','Procesando');
         const ep = $("EP_PROCESS")?.value.trim() || '';
@@ -196,14 +186,10 @@
 
         const payload = { body: { raw } };
         const out = await callJSON(ep, payload);
-        let d = out?.data ?? out; // puede venir envuelto o no
-        if (Array.isArray(d)) d = d[0] ?? {}; // n8n a veces responde array
+        let d = out?.data ?? out;
+        if (Array.isArray(d)) d = d[0] ?? {};
 
-        // normalizar alias tel -> cel (para validación uniforme)
-        if (!d.cel_codigo && d.tel_codigo) d.cel_codigo = d.tel_codigo;
-        if (!d.cel_numero && d.tel_numero) d.cel_numero = d.tel_numero;
-
-        // construir vista compuesta + estado usando d completo
+        // compuestos/estado
         safeVal(plc, buildPLC(d));
         const estado = d.validacion_cp || 'OK';
         const info = d.motivo_validacion || '';
@@ -211,37 +197,40 @@
         safeVal(sugs, sug);
         setStatus(estado, info || '');
 
-        // mostrar SOLO el payload final que se manda a append
+        // final
         const finalD = toFinalPayload(d);
         if (jsonOut) jsonOut.textContent = JSON.stringify(finalD, null, 2);
 
-        // 2A: avisos de faltantes
+        // avisos
         const miss = getMissing(finalD);
         renderAlerts(miss);
         const mustReview = (estado === 'REVISAR') || miss.length > 0;
         if (btnConfirm) btnConfirm.disabled = mustReview;
       }catch(err){
+        console.error('[Andreani Front] onProcess error:', err);
         setStatus('REVISAR', err.message);
         if (jsonOut) jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
         if (btnConfirm) btnConfirm.disabled = true;
       }
-    });
+    }
 
-    btnConfirm?.addEventListener('click', async () => {
+    async function onConfirm(){
       try{
         const ep = $("EP_APPEND")?.value.trim() || '';
         if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
-        const d = JSON.parse((jsonOut?.textContent) || '{}'); // ya es el payload final
+        const finalText = (jsonOut?.textContent || '{}');
+        const d = JSON.parse(finalText);
         await callJSON(ep, { data: d });
         setStatus('OK', 'Agregado a la hoja Carga');
         const rawEl = $("raw");
         if (rawEl) rawEl.value = '';
       }catch(err){
+        console.error('[Andreani Front] onConfirm error:', err);
         setStatus('REVISAR', err.message);
       }
-    });
+    }
 
-    btnDownload?.addEventListener('click', async () => {
+    function onDownload(){
       try {
         const ep = $("EP_DOWNLOAD")?.value.trim() || '';
         if (!ep) throw new Error('Completá el endpoint de descarga');
@@ -252,7 +241,14 @@
       } catch (e) {
         alert(e.message);
       }
-    });
+    }
+
+    // ===== wire events (sin optional chaining) =====
+    if (btnProcess) btnProcess.addEventListener('click', onProcess);
+    if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
+    if (btnDownload) btnDownload.addEventListener('click', onDownload);
+
+    console.log('[Andreani Front] wired');
   });
 </script>
 </body>
