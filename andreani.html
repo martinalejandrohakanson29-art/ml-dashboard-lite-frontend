@@ -119,11 +119,24 @@
     }
 
     function toFinalPayload(d){
-      const omit = new Set([
-        'validacion_cp','cp_sugerido','localidad_sugerida','motivo_validacion',
-        'telefono_estado','telefono_msg','_debug','message','input_text'
-      ]);
+      // Lista blanca de campos que queremos en el payload final
+      const keep = [
+        'peso_grs','alto_cm','ancho_cm','profundidad_cm','valor_declarado',
+        'nombre','apellido','dni','email','cel_codigo','cel_numero',
+        'calle','numero','depto','ciudad','partido_o_localidad','provincia','cp','referencias'
+      ];
+
+      // Normalizar tel_* -> cel_* antes de construir
+      const src = { ...d };
+      if (!src.cel_codigo && src.tel_codigo) src.cel_codigo = src.tel_codigo;
+      if (!src.cel_numero && src.tel_numero) src.cel_numero = src.tel_numero;
+
       const out = {};
+      for (const k of keep){
+        if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
+      }
+      return out;
+    };
       for (const k of Object.keys(d||{})){
         if (!omit.has(k) && !k.startsWith('_')) out[k] = d[k];
       }
