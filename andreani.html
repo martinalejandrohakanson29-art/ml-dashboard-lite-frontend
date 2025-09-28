@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EnvÃ­os Andreani â€“ Etiquetas</title>
+  <title>Envíos Andreani – Etiquetas</title>
   <style>
     :root{--bg:#0b1220;--card:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--btn:#f8fafc;--ink:#0b1220}
     *{box-sizing:border-box}
@@ -40,13 +40,13 @@
     <!-- Izquierda: Entrada cruda -->
     <section class="card">
       <h1>Entrada cruda</h1>
-      <p class="muted">PegÃ¡ el texto del cliente. Luego presionÃ¡ <strong>Procesar con IA</strong>.</p>
-      <textarea id="raw" placeholder="Ej: Nombre completo: ... DNI: ... Domicilio: ... Ciudad: ... Provincia: ... TelÃ©fono: ... E-mail: ... CÃ³digo postal: ... Referencias: ..."></textarea>
+      <p class="muted">Pegá el texto del cliente. Luego presioná <strong>Procesar con IA</strong>.</p>
+      <textarea id="raw" placeholder="Ej: Nombre completo: ... DNI: ... Domicilio: ... Ciudad: ... Provincia: ... Teléfono: ... E-mail: ... Código postal: ... Referencias: ..."></textarea>
       <div class="hr"></div>
       <div class="row">
-        <button class="btn" id="btnProcess">âš™ï¸ Procesar con IA</button>
-        <button class="btn" id="btnConfirm" disabled>âœ… Confirmar y agregar a hoja</button>
-        <button class="btn" id="btnDownload">â¬‡ï¸ Descargar XLSX</button>
+        <button class="btn" id="btnProcess">⚙️ Procesar con IA</button>
+        <button class="btn" id="btnConfirm" disabled>✅ Confirmar y agregar a hoja</button>
+        <button class="btn" id="btnDownload">⬇️ Descargar XLSX</button>
       </div>
       <div class="hr"></div>
       <div class="row">
@@ -55,7 +55,7 @@
           <input id="EP_PROCESS" placeholder="https://tu-n8n/webhook/andreani/process" />
         </div>
         <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de confirmaciÃ³n (append)</label>
+          <label class="small">Endpoint de confirmación (append)</label>
           <input id="EP_APPEND" placeholder="https://tu-n8n/webhook/andreani/append" />
         </div>
         <div class="field" style="min-width:280px">
@@ -65,9 +65,9 @@
       </div>
     </section>
 
-    <!-- Derecha: PrevisualizaciÃ³n (payload final) -->
+    <!-- Derecha: Previsualización (payload final) -->
     <section class="card">
-      <h1>PrevisualizaciÃ³n</h1>
+      <h1>Previsualización</h1>
       <!-- Controles 2B: defaults editables -->
       <div class="controls">
         <div class="field"><label class="small">Peso (grs)</label><input id="peso_grs" type="number" placeholder="1000" /></div>
@@ -83,8 +83,8 @@
       <!-- Debajo, estado + detalles para revisar -->
       <div class="hr"></div>
       <div class="row" style="align-items:center;margin:6px 0 10px 0">
-        <span id="badge" class="pill warn">Esperandoâ€¦</span>
-        <span id="summary" class="small">â€”</span>
+        <span id="badge" class="pill warn">Esperando…</span>
+        <span id="summary" class="small">—</span>
       </div>
       <div class="grid">
         <div class="field">
@@ -122,7 +122,7 @@
     // ===== state helpers =====
     function setStatus(state, text){
       if (badge) badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
-      safeText(badge, state || 'â€”');
+      safeText(badge, state || '—');
       safeText(summary, text || '');
     }
     function buildPLC(d){
@@ -191,10 +191,10 @@
       // Tel: válido si tiene ambos campos O si el workflow dijo OK
       const telEstadoOk = String(finalD.telefono_estado || '').toUpperCase() === 'OK';
       const telOK = (has(finalD.tel_codigo) && has(finalD.tel_numero)) || telEstadoOk;
-      if (!telOK) miss.push('Falta telÃ©fono (cÃ³digo y nÃºmero)');
+      if (!telOK) miss.push('Falta teléfono (código y número)');
 
       const email = String(finalD.email || '');
-      if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o invÃ¡lido');
+      if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o inválido');
 
       if (!has(finalD.numero)) miss.push('Falta altura de calle'); // "0" no entra acá
       return miss;
@@ -236,17 +236,17 @@
       const text = await res.text();
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${text?.slice(0,400) || '(sin cuerpo)'}`);
       if (!ct.includes('application/json')) throw new Error(`Respuesta no JSON: ${text?.slice(0,400) || '(sin cuerpo)'}`);
-      if (!text) throw new Error('El servidor respondiÃ³ JSON vacÃ­o');
-      try { return JSON.parse(text); } catch(e){ throw new Error(`JSON invÃ¡lido: ${text?.slice(0,400)}`); }
+      if (!text) throw new Error('El servidor respondió JSON vacío');
+      try { return JSON.parse(text); } catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
     }
 
     async function onProcess(){
       try{
-        setStatus('â€¦','Procesando');
+        setStatus('…','Procesando');
         const ep = $("EP_PROCESS")?.value.trim() || '';
-        if (!ep) throw new Error('CompletÃ¡ el endpoint de proceso');
+        if (!ep) throw new Error('Completá el endpoint de proceso');
         const raw = $("raw")?.value.trim() || '';
-        if (!raw) throw new Error('PegÃ¡ el texto del cliente en Entrada cruda');
+        if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
 
         const payload = { body: { raw } };
         const out = await callJSON(ep, payload);
@@ -257,7 +257,7 @@
         safeVal(plc, buildPLC(d));
         const estado = d.validacion_cp || 'OK';
         const info = d.motivo_validacion || '';
-        const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' Â· ');
+        const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
         safeVal(sugs, sug);
         setStatus(estado, info || '');
 
@@ -282,7 +282,7 @@
     async function onConfirm(){
       try{
         const ep = $("EP_APPEND")?.value.trim() || '';
-        if (!ep) throw new Error('CompletÃ¡ el endpoint de confirmaciÃ³n (append)');
+        if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
         const finalText = (jsonOut?.textContent || '{}');
         const d = JSON.parse(finalText);
         await callJSON(ep, { data: d });
@@ -298,7 +298,7 @@
     function onDownload(){
       try {
         const ep = $("EP_DOWNLOAD")?.value.trim() || '';
-        if (!ep) throw new Error('CompletÃ¡ el endpoint de descarga');
+        if (!ep) throw new Error('Completá el endpoint de descarga');
         const a = document.createElement('a');
         a.href = ep;
         a.download = '';
