@@ -144,7 +144,7 @@
       const telOK = has(finalD.cel_codigo) && has(finalD.cel_numero);
       if (!telOK) miss.push('Falta teléfono (código y número)');
       const numero = String(finalD.numero ?? '').trim();
-      if (!numero || /^0+$/.test(numero)) miss.push('Falta número de puerta');
+      if (!numero || /^0+$/.test(numero)) miss.push('Falta altura de calle');
       const email = String(finalD.email || '');
       if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o inválido');
       return miss;
