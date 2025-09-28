@@ -8,15 +8,15 @@
     :root{--bg:#0b1220;--card:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--btn:#f8fafc;--ink:#0b1220}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px}
-    .wrap{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+    .wrap{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,.25);display:flex;flex-direction:column;min-height:520px}
     h1{margin:0 0 8px 0;font-size:1.25rem}
     .muted{color:var(--muted);font-size:.92rem;margin:0 0 8px 0}
-    textarea{width:100%;min-height:240px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical}
+    textarea{width:100%;flex:1;min-height:320px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical}
     .row{display:flex;gap:10px;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:var(--btn);color:var(--ink);font-weight:700;cursor:pointer}
     .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
-    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;max-height:320px;overflow:auto}
+    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;max-height:none;overflow:auto;flex:1;min-height:320px}
     .pill{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.85rem}
     .ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399}
     .warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
@@ -30,11 +30,13 @@
 </head>
 <body>
   <main class="wrap">
+    <!-- Izquierda: Entrada cruda -->
     <section class="card">
       <h1>Entrada cruda</h1>
       <p class="muted">Pegá el texto del cliente. Luego presioná <strong>Procesar con IA</strong>.</p>
       <textarea id="raw" placeholder="Ej: Nombre completo: ... DNI: ... Domicilio: ... Ciudad: ... Provincia: ... Teléfono: ... E-mail: ... Código postal: ... Referencias: ..."></textarea>
-      <div class="row" style="margin-top:10px">
+      <div class="hr"></div>
+      <div class="row">
         <button class="btn" id="btnProcess">⚙️ Procesar con IA</button>
         <button class="btn" id="btnConfirm" disabled>✅ Confirmar y agregar a hoja</button>
         <button class="btn" id="btnDownload">⬇️ Descargar XLSX</button>
@@ -56,9 +58,14 @@
       </div>
     </section>
 
+    <!-- Derecha: Previsualización (payload final) -->
     <section class="card">
       <h1>Previsualización</h1>
-      <p class="muted">A partir de ahora se muestra <strong>solo el payload final</strong> que se envía a <em>append</em> (sin campos internos como validaciones o _debug).</p>
+      <!-- Quitamos el texto explicativo para dejar arriba SOLO el JSON final -->
+      <pre id="jsonOut">{ }</pre>
+
+      <!-- Debajo, estado + detalles para revisar -->
+      <div class="hr"></div>
       <div class="row" style="align-items:center;margin:6px 0 10px 0">
         <span id="badge" class="pill warn">Esperando…</span>
         <span id="summary" class="small">—</span>
@@ -73,8 +80,6 @@
           <input id="sugs" readonly />
         </div>
       </div>
-      <div class="hr"></div>
-      <pre id="jsonOut">{ }</pre>
     </section>
   </main>
 
@@ -101,7 +106,7 @@
       return `${prov} / ${loc} / ${cp}`;
     }
 
-    // 👇 NUEVO: dejar solo el payload final que vamos a enviar a APPEND
+    // Dejar solo el payload final que vamos a enviar a APPEND
     function toFinalPayload(d){
       const omit = new Set([
         'validacion_cp','cp_sugerido','localidad_sugerida','motivo_validacion',
@@ -146,7 +151,7 @@
         const info = d.motivo_validacion || '';
         const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
         sugs.value = sug;
-        setStatus(estado, info ? info + ' — Vista: payload final para APPEND' : 'Vista: payload final para APPEND');
+        setStatus(estado, info || '');
 
         // mostrar SOLO el payload final que se manda a append
         const finalD = toFinalPayload(d);
