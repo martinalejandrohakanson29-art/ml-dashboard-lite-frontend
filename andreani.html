@@ -91,6 +91,9 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
+    // helpers seguros por si algún elemento no está aún en el DOM
+    function safeText(el, value){ if(el) el.textContent = value; }
+    function safeVal(el, value){ if(el) el.value = value; }
     const badge = $("badge");
     const summary = $("summary");
     const jsonOut = $("jsonOut");
@@ -101,9 +104,9 @@
     const alerts = $("alerts");
 
     function setStatus(state, text){
-      badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
-      badge.textContent = state || '—';
-      summary.textContent = text || '';
+      if (badge) badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
+      safeText(badge, state || '—');
+      safeText(summary, text || '');
     }
 
     function buildPLC(d){
@@ -131,9 +134,14 @@
       const miss = [];
       const has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
       if (!has(finalD.dni)) miss.push('Falta DNI');
+
       const telOK = has(finalD.cel_codigo) && has(finalD.cel_numero);
       if (!telOK) miss.push('Falta teléfono (código y número)');
-      if (!has(finalD.numero)) miss.push('Falta número de puerta');
+
+      // considerar '0' como faltante para número de puerta
+      const numero = String(finalD.numero ?? '').trim();
+      if (!numero || /^0+$/.test(numero)) miss.push('Falta número de puerta');
+
       // email básico
       const email = String(finalD.email || '');
       const emailOK = /.+@.+\..+/.test(email);
@@ -175,6 +183,37 @@
         if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
 
         const payload = { body: { raw } };
+        const out = await callJSON(ep, payload);
+        let d = out?.data ?? out; // puede venir envuelto o no
+        if (Array.isArray(d)) d = d[0] ?? {}; // n8n a veces responde array
+
+        // normalizar alias tel -> cel (para validación uniforme)
+        if (!d.cel_codigo && d.tel_codigo) d.cel_codigo = d.tel_codigo;
+        if (!d.cel_numero && d.tel_numero) d.cel_numero = d.tel_numero;
+
+        // construir vista compuesta + estado usando d completo
+        safeVal(plc, buildPLC(d));
+        const estado = d.validacion_cp || 'OK';
+        const info = d.motivo_validacion || '';
+        const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
+        safeVal(sugs, sug);
+        setStatus(estado, info || '');
+
+        // mostrar SOLO el payload final que se manda a append
+        const finalD = toFinalPayload(d);
+        jsonOut && (jsonOut.textContent = JSON.stringify(finalD, null, 2));
+
+        // 2A: avisos de faltantes
+        const miss = getMissing(finalD);
+        renderAlerts(miss);
+        const mustReview = (estado === 'REVISAR') || miss.length > 0;
+        btnConfirm.disabled = mustReview;
+      }catch(err){
+        setStatus('REVISAR', err.message);
+        if (jsonOut) jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
+        btnConfirm.disabled = true;
+      }
+    };
         const out = await callJSON(ep, payload);
         const d = out.data || out; // respuesta completa
 
