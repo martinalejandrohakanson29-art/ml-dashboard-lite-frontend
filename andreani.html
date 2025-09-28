@@ -15,7 +15,7 @@
     textarea{width:100%;min-height:240px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical}
     .row{display:flex;gap:10px;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:var(--btn);color:var(--ink);font-weight:700;cursor:pointer}
-    .btn:hover{transform:translateY{-}1px;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
     pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;max-height:320px;overflow:auto}
     .pill{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.85rem}
     .ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399}
@@ -58,7 +58,7 @@
 
     <section class="card">
       <h1>Previsualización</h1>
-      <p class="muted">Vas a ver el JSON normalizado + estado de validación del CP. Si está OK, confirmá para que se agregue a la hoja <em>Carga</em>.</p>
+      <p class="muted">A partir de ahora se muestra <strong>solo el payload final</strong> que se envía a <em>append</em> (sin campos internos como validaciones o _debug).</p>
       <div class="row" style="align-items:center;margin:6px 0 10px 0">
         <span id="badge" class="pill warn">Esperando…</span>
         <span id="summary" class="small">—</span>
@@ -101,6 +101,19 @@
       return `${prov} / ${loc} / ${cp}`;
     }
 
+    // 👇 NUEVO: dejar solo el payload final que vamos a enviar a APPEND
+    function toFinalPayload(d){
+      const omit = new Set([
+        'validacion_cp','cp_sugerido','localidad_sugerida','motivo_validacion',
+        'telefono_estado','telefono_msg','_debug','message','input_text'
+      ]);
+      const out = {};
+      for (const k of Object.keys(d||{})){
+        if (!omit.has(k) && !k.startsWith('_')) out[k] = d[k];
+      }
+      return out;
+    }
+
     async function callJSON(url, body){
       const res = await fetch(url, {
         method: 'POST',
@@ -125,14 +138,19 @@
 
         const payload = { body: { raw } };
         const out = await callJSON(ep, payload);
-        const d = out.data || out;
-        jsonOut.textContent = JSON.stringify(d, null, 2);
+        const d = out.data || out; // respuesta completa
+
+        // construir vista compuesta + estado usando d completo
         plc.value = buildPLC(d);
         const estado = d.validacion_cp || 'OK';
         const info = d.motivo_validacion || '';
         const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
         sugs.value = sug;
-        setStatus(estado, info);
+        setStatus(estado, info ? info + ' — Vista: payload final para APPEND' : 'Vista: payload final para APPEND');
+
+        // mostrar SOLO el payload final que se manda a append
+        const finalD = toFinalPayload(d);
+        jsonOut.textContent = JSON.stringify(finalD, null, 2);
         btnConfirm.disabled = (estado === 'REVISAR');
       }catch(err){
         setStatus('REVISAR', err.message);
@@ -145,7 +163,7 @@
       try{
         const ep = $("EP_APPEND").value.trim();
         if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
-        const d = JSON.parse(jsonOut.textContent || '{}');
+        const d = JSON.parse(jsonOut.textContent || '{}'); // ya es el payload final
         await callJSON(ep, { data: d });
         setStatus('OK', 'Agregado a la hoja Carga');
         $("raw").value = '';
