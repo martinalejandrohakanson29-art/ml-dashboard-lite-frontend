@@ -123,7 +123,7 @@
         const raw = $("raw").value.trim();
         if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
 
-        const payload = { raw };
+        const payload = { body: { raw } };
         const out = await callJSON(ep, payload);
         const d = out.data || out;
         jsonOut.textContent = JSON.stringify(d, null, 2);
