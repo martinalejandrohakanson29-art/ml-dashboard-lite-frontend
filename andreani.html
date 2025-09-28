@@ -3,309 +3,309 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Envíos Andreani – Etiquetas</title>
+  <title>Previsualización y envío a planilla (Andreani)</title>
   <style>
-    :root{--bg:#0b1220;--card:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--btn:#f8fafc;--ink:#0b1220}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px}
-    .wrap{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
-    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,.25);display:flex;flex-direction:column;min-height:auto}
-    h1{margin:0 0 8px 0;font-size:1.25rem}
-    .muted{color:var(--muted);font-size:.92rem;margin:0 0 8px 0}
-    textarea{width:100%;height:320px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical;flex:0 0 auto} 
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:var(--btn);color:var(--ink);font-weight:700;cursor:pointer}
-    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
-    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;height:320px;overflow:auto;flex:0 0 auto} 
-    .pill{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.85rem}
-    .ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399}
-    .warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
-    .bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
-    .field{display:flex;flex-direction:column;gap:4px}
-    .field input{width:100%;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px}
-    .small{font-size:.85rem;color:var(--muted)}
-    .hr{height:1px;background:#1f2937;margin:12px 0}
-    .alerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-    .chip{border-radius:999px;padding:6px 10px;font-size:.85rem;font-weight:700}
-    .chip.bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
-    .chip.warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
-    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
-    .controls .field{gap:2px}
-    .controls .field input{height:36px}
+    :root{
+      --bg:#0f172a;        /* slate-900 */
+      --panel:#0b1224;     /* slightly darker */
+      --text:#e5e7eb;      /* gray-200 */
+      --muted:#94a3b8;     /* slate-400 */
+      --ok:#16a34a;        /* green-600 */
+      --warn:#d97706;      /* amber-600 */
+      --bad:#b91c1c;       /* red-700 */
+      --chip:#111827;      /* gray-900 */
+      --brand:#2563eb;     /* blue-600 */
+      --brand2:#60a5fa;    /* blue-300 */
+      --card:#111827;      /* gray-900 */
+      --input:#0b1224;
+      --border:#1f2937;    /* gray-800 */
+    }
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    }
+    .wrap{max-width:1100px; margin:24px auto; padding:0 16px;}
+    h1{font-size:22px; margin:0 0 16px;}
+    h2{font-size:18px; margin:24px 0 12px;}
+    .card{
+      background:var(--card); border:1px solid var(--border);
+      border-radius:12px; padding:16px; margin-bottom:16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    }
+    .grid{display:grid; gap:12px}
+    .grid.cols-4{grid-template-columns: repeat(4, minmax(0,1fr));}
+    .grid.cols-2{grid-template-columns: repeat(2, minmax(0,1fr));}
+    .field{display:flex; flex-direction:column; gap:6px}
+    label{font-size:12px; color:var(--muted)}
+    input[type="text"], input[type="number"]{
+      background:var(--input); color:var(--text);
+      border:1px solid var(--border); border-radius:10px;
+      padding:10px 12px; outline:none; font-size:14px;
+    }
+    input[readonly]{opacity:.9}
+    .row{display:flex; gap:8px; flex-wrap:wrap}
+    .btn{
+      border:1px solid var(--border); background:var(--brand);
+      color:white; padding:10px 14px; border-radius:10px;
+      font-weight:600; cursor:pointer;
+      transition: transform .05s ease, background .2s ease;
+    }
+    .btn:hover{background:var(--brand2); color:#0b1224}
+    .btn:active{transform:scale(.98)}
+    .btn.ghost{background:transparent; color:var(--text)}
+    .btn.badge{position:relative}
+    .btn[disabled]{opacity:.5; cursor:not-allowed}
+    .chips{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px}
+    .chip{
+      display:inline-flex; align-items:center; padding:8px 12px;
+      border-radius:999px; font-weight:700; font-size:12px;
+      background:#0f172a; border:1px solid var(--border);
+    }
+    .chip.ok{background:rgba(22,163,74,.12); border-color:rgba(22,163,74,.35); color:#86efac}
+    .chip.warn{background:rgba(217,119,6,.12); border-color:rgba(217,119,6,.35); color:#fcd34d}
+    .chip.bad{background:rgba(185,28,28,.12); border-color:rgba(185,28,28,.35); color:#fecaca}
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:12px; white-space:pre-wrap; background:#0b1224; border:1px solid var(--border);
+      border-radius:10px; padding:12px; color:#cbd5e1;
+    }
+    .footer{opacity:.7; font-size:12px; margin-top:16px}
+    @media (max-width:900px){.grid.cols-4{grid-template-columns: repeat(2, minmax(0,1fr));}}
+    @media (max-width:640px){.grid.cols-4,.grid.cols-2{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <!-- Izquierda: Entrada cruda -->
-    <section class="card">
-      <h1>Entrada cruda</h1>
-      <p class="muted">Pegá el texto del cliente. Luego presioná <strong>Procesar con IA</strong>.</p>
-      <textarea id="raw" placeholder="Ej: Nombre completo: ... DNI: ... Domicilio: ... Ciudad: ... Provincia: ... Teléfono: ... E-mail: ... Código postal: ... Referencias: ..."></textarea>
-      <div class="hr"></div>
-      <div class="row">
-        <button class="btn" id="btnProcess">⚙️ Procesar con IA</button>
-        <button class="btn" id="btnConfirm" disabled>✅ Confirmar y agregar a hoja</button>
-        <button class="btn" id="btnDownload">⬇️ Descargar XLSX</button>
-      </div>
-      <div class="hr"></div>
-      <div class="row">
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de proceso (n8n)</label>
-          <input id="EP_PROCESS" placeholder="https://tu-n8n/webhook/andreani/process" />
-        </div>
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de confirmación (append)</label>
-          <input id="EP_APPEND" placeholder="https://tu-n8n/webhook/andreani/append" />
-        </div>
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de descarga XLSX</label>
-          <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/webhook/andreani/download" />
-        </div>
-      </div>
-    </section>
+  <div class="wrap">
+    <h1>Previsualización</h1>
 
-    <!-- Derecha: Previsualización (payload final) -->
-    <section class="card">
-      <h1>Previsualización</h1>
-      <!-- Controles 2B: defaults editables -->
-      <div class="controls">
-        <div class="field"><label class="small">Peso (grs)</label><input id="peso_grs" type="number" placeholder="1000" /></div>
-        <div class="field"><label class="small">Alto (cm)</label><input id="alto_cm" type="number" placeholder="10" /></div>
-        <div class="field"><label class="small">Ancho (cm)</label><input id="ancho_cm" type="number" placeholder="10" /></div>
-        <div class="field"><label class="small">Valor declarado ($)</label><input id="valor_declarado" type="number" placeholder="50000" /></div>
-      </div>
-      <!-- Avisos de faltantes (2A) -->
-      <div id="alerts" class="alerts"></div>
-      <!-- JSON final -->
-      <pre id="jsonOut">{ }</pre>
-
-      <!-- Debajo, estado + detalles para revisar -->
-      <div class="hr"></div>
-      <div class="row" style="align-items:center;margin:6px 0 10px 0">
-        <span id="badge" class="pill warn">Esperando…</span>
-        <span id="summary" class="small">—</span>
-      </div>
-      <div class="grid">
+    <div class="card">
+      <div class="grid cols-4">
         <div class="field">
-          <label class="small">Provincia / Localidad / CP (compuesto)</label>
-          <input id="plc" readonly />
+          <label>Peso (grs)</label>
+          <input id="peso_grs" type="number" readonly />
         </div>
         <div class="field">
-          <label class="small">Sugerencias (si REVISAR/CORREGIDO)</label>
-          <input id="sugs" readonly />
+          <label>Alto (cm)</label>
+          <input id="alto_cm" type="number" readonly />
+        </div>
+        <div class="field">
+          <label>Ancho (cm)</label>
+          <input id="ancho_cm" type="number" readonly />
+        </div>
+        <div class="field">
+          <label>Valor declarado ($)</label>
+          <input id="valor_declarado" type="number" readonly />
         </div>
       </div>
-    </section>
-  </main>
+
+      <div id="alerts" class="chips" aria-live="polite"></div>
+    </div>
+
+    <div class="card">
+      <h2>Acciones</h2>
+      <div class="row">
+        <button id="btnAI" class="btn">Procesar con IA</button>
+        <button id="btnConfirm" class="btn">Confirmar y agregar a hoja</button>
+        <button id="btnCopy" class="btn ghost">Copiar JSON</button>
+      </div>
+      <div class="footer">Si algo falla, probá “Procesar con IA” nuevamente.</div>
+    </div>
+
+    <div class="card">
+      <h2>Salida del workflow</h2>
+      <div id="jsonOut" class="mono">{}</div>
+    </div>
+  </div>
 
   <script>
-  window.addEventListener('DOMContentLoaded', () => {
-    console.log('[Andreani Front] init');
+    // 👉👉 Configurá tu endpoint de n8n acá
+    const WORKFLOW_URL = 'REEMPLAZAR_AQUI_CON_TU_WEBHOOK_O_ENDPOINT';
 
-    // ===== util =====
+    // ----------------- utilidades -----------------
     const $ = (id) => document.getElementById(id);
-    const safeText = (el, v) => { if (el) el.textContent = v; };
-    const safeVal  = (el, v) => { if (el) el.value = v; };
+    const alerts = $('alerts');
+    const out = $('jsonOut');
 
-    // ===== refs =====
-    const badge = $("badge");
-    const summary = $("summary");
-    const jsonOut = $("jsonOut");
-    const plc = $("plc");
-    const sugs = $("sugs");
-    const alerts = $("alerts");
-    const btnProcess = $("btnProcess");
-    const btnConfirm = $("btnConfirm");
-    const btnDownload = $("btnDownload");
+    const safeStr = (v) => (v === undefined || v === null) ? '' : String(v);
+    const hasVal = (v) => safeStr(v).trim() !== '';
 
-    // ===== state helpers =====
-    function setStatus(state, text){
-      if (badge) badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
-      safeText(badge, state || '—');
-      safeText(summary, text || '');
-    }
-    function buildPLC(d){
-      const prov = (d.provincia||'').toString().toUpperCase();
-      const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
-      const cp   = (d.cp||'').toString();
-      return `${prov} / ${loc} / ${cp}`;
+    // ----------------- render helpers -----------------
+    function renderPreview(d){
+      $('peso_grs').value = d.peso_grs ?? 1000;
+      $('alto_cm').value = d.alto_cm ?? 10;
+      $('ancho_cm').value = d.ancho_cm ?? 10;
+      $('valor_declarado').value = d.valor_declarado ?? 50000;
     }
 
-    // whitelist → payload final
+    function renderAlerts(missing, warns, extras){
+      alerts.innerHTML = '';
+      (warns||[]).forEach(w => {
+        const s = document.createElement('span');
+        s.className = 'chip warn';
+        s.textContent = w;
+        alerts.appendChild(s);
+      });
+      (missing||[]).forEach(m => {
+        const s = document.createElement('span');
+        s.className = 'chip bad';
+        s.textContent = m;
+        alerts.appendChild(s);
+      });
+
+      // Si viene un mensaje de teléfono y el estado NO es OK, mostramos el aviso
+      if (extras && extras.telefono_msg && String(extras.telefono_estado || '').toUpperCase() !== 'OK') {
+        const s = document.createElement('span');
+        s.className = 'chip warn';
+        s.textContent = extras.telefono_msg;
+        alerts.appendChild(s);
+      }
+    }
+
+    // ----------------- normalización / payload -----------------
     function toFinalPayload(d){
+      const src = { ...d };
+
+      // Backwards-compat: si vienen campos celulares, los usamos como teléfono
+      if (!src.tel_codigo && src.cel_codigo) src.tel_codigo = src.cel_codigo;
+      if (!src.tel_numero && src.cel_numero) src.tel_numero = src.cel_numero;
+
+      // Normalizamos por si vinieron numéricos
+      src.tel_codigo = safeStr(src.tel_codigo).trim();
+      src.tel_numero = safeStr(src.tel_numero).trim();
+
+      // Whitelist → sólo mandamos lo que necesitamos
       const keep = [
         'peso_grs','alto_cm','ancho_cm','profundidad_cm','valor_declarado',
         'nombre','apellido','dni','email','tel_codigo','tel_numero',
-        'calle','numero','depto','ciudad','partido_o_localidad','provincia','cp','referencias'
+        'calle','numero','depto','ciudad','partido_o_localidad','provincia','cp','referencias',
+        'telefono_estado','telefono_msg' // ← agregado
       ];
-      const src = { ...d };
-      if (!src.tel_codigo && src.cel_codigo) src.tel_codigo = src.cel_codigo;
-      if (!src.tel_numero && src.cel_numero) src.tel_numero = src.cel_numero;
       const out = {};
       keep.forEach(k => { if (k in src) out[k] = src[k]; });
       return out;
     }
 
-    // 2B: defaults para dimensiones y valor declarado
-    const DEFAULTS = { peso_grs: 1000, alto_cm: 10, ancho_cm: 10, valor_declarado: 50000 };
-    function applyDefaults(finalD){
-      for (const k of Object.keys(DEFAULTS)){
-        const v = finalD[k];
-        if (v === undefined || v === null || (typeof v === 'string' && v.trim() === '')){
-          finalD[k] = DEFAULTS[k];
-        }
-      }
-      return finalD;
-    }
-
-    function writeControls(finalD){
-      const setNum = (id, val) => { const el = document.getElementById(id); if (el) el.value = (val ?? ''); };
-      setNum('peso_grs', finalD.peso_grs ?? '');
-      setNum('alto_cm', finalD.alto_cm ?? '');
-      setNum('ancho_cm', finalD.ancho_cm ?? '');
-      setNum('valor_declarado', finalD.valor_declarado ?? '');
-    }
-
-    function readControlsInto(finalD){
-      const readNum = (id) => { const el = document.getElementById(id); if (!el) return undefined; const n = Number(el.value); return Number.isFinite(n) && n>0 ? n : undefined; };
-      const p = readNum('peso_grs'); if (p !== undefined) finalD.peso_grs = p;
-      const a = readNum('alto_cm'); if (a !== undefined) finalD.alto_cm = a;
-      const an = readNum('ancho_cm'); if (an !== undefined) finalD.ancho_cm = an;
-      const vd = readNum('valor_declarado'); if (vd !== undefined) finalD.valor_declarado = vd;
-      return finalD;
-    }
-
     function getMissing(finalD){
       const miss = [];
-      const has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
-      if (!has(finalD.dni)) miss.push('Falta DNI');
-      const telOK = has(finalD.tel_codigo) && has(finalD.tel_numero);
-      if (!telOK) miss.push('Falta teléfono (código y número)');
-      const email = String(finalD.email || '');
-      if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o inválido');
-      if (!has(finalD.numero)) miss.push('Falta altura de calle'); // "0" no entra acá
-      return miss;
-    }
-    function getWarnings(finalD){
       const warns = [];
-      const numero = String(finalD.numero ?? '').trim();
-      if (numero === '0') warns.push('Altura no provista (se usa 0)');
-      return warns;
-    }
-    function renderAlerts(miss, warns){
-      if (!alerts) return;
-      alerts.innerHTML = '';
-      (warns||[]).forEach(w => { const s=document.createElement('span'); s.className='chip warn'; s.textContent=w; alerts.appendChild(s); });
-      (miss||[]).forEach(m => { const s=document.createElement('span'); s.className='chip bad'; s.textContent=m; alerts.appendChild(s); });
+
+      // Altura 0 -> warning (no bloquea)
+      const numeroStr = safeStr(finalD.numero).trim();
+      if (!hasVal(numeroStr)) miss.push('Falta altura de calle');
+      else if (numeroStr === '0') warns.push('Altura no provista (se usa 0)');
+
+      // Email simple
+      const email = safeStr(finalD.email);
+      if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o inválido');
+
+      // Teléfono: si estado OK, consideramos válido aunque falte formateo
+      const telEstadoOk = String(finalD.telefono_estado || '').toUpperCase() === 'OK';
+      const telOkByFields = hasVal(finalD.tel_codigo) && hasVal(finalD.tel_numero);
+      if (!(telOkByFields || telEstadoOk)) {
+        miss.push('Falta teléfono (código y número)');
+      }
+
+      return { miss, warns };
     }
 
-    async function callJSON(url, body){
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body ?? {})
+    // ----------------- flujo principal -----------------
+    async function callWorkflow(){
+      // Podés modificar el body si tu webhook espera otro formato
+      const resp = await fetch(WORKFLOW_URL, {
+        method: 'GET'
       });
-      const ct = res.headers.get('content-type') || '';
-      const text = await res.text();
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text?.slice(0,400) || '(sin cuerpo)'}`);
-      if (!ct.includes('application/json')) throw new Error(`Respuesta no JSON: ${text?.slice(0,400) || '(sin cuerpo)'}`);
-      if (!text) throw new Error('El servidor respondió JSON vacío');
-      try { return JSON.parse(text); } catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
-    }
 
-    async function onProcess(){
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      // Puede venir vacío → evitamos “Unexpected end of JSON input”
+      const text = await resp.text();
+      if (!text || !text.trim()) {
+        throw new Error('El servidor respondió JSON vacío');
+      }
+
+      let data = null;
       try{
-        setStatus('…','Procesando');
-        const ep = $("EP_PROCESS")?.value.trim() || '';
-        if (!ep) throw new Error('Completá el endpoint de proceso');
-        const raw = $("raw")?.value.trim() || '';
-        if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
-
-        const payload = { body: { raw } };
-        const out = await callJSON(ep, payload);
-        let d = out?.data ?? out;
-        if (Array.isArray(d)) d = d[0] ?? {};
-
-        // compuestos/estado
-        safeVal(plc, buildPLC(d));
-        const estado = d.validacion_cp || 'OK';
-        const info = d.motivo_validacion || '';
-        const sug = [d.localidad_sugerida, d.cp_sugerido].filter(Boolean).join(' · ');
-        safeVal(sugs, sug);
-        setStatus(estado, info || '');
-
-        // final
-        let finalD = toFinalPayload(d);
-        finalD = applyDefaults(finalD);
-        writeControls(finalD);
-        if (jsonOut) jsonOut.textContent = JSON.stringify(finalD, null, 2);
-        const miss = getMissing(finalD);
-        const warns = getWarnings(finalD);
-        renderAlerts(miss, warns);
-        const mustReview = (estado === 'REVISAR') || miss.length > 0;
-        if (btnConfirm) btnConfirm.disabled = mustReview;
-      }catch(err){
-        console.error('[Andreani Front] onProcess error:', err);
-        setStatus('REVISAR', err.message);
-        if (jsonOut) jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
-        if (btnConfirm) btnConfirm.disabled = true;
-      }
-    }
-
-    async function onConfirm(){
-      try{
-        const ep = $("EP_APPEND")?.value.trim() || '';
-        if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
-        const finalText = (jsonOut?.textContent || '{}');
-        const d = JSON.parse(finalText);
-        await callJSON(ep, { data: d });
-        setStatus('OK', 'Agregado a la hoja Carga');
-        const rawEl = $("raw");
-        if (rawEl) rawEl.value = '';
-      }catch(err){
-        console.error('[Andreani Front] onConfirm error:', err);
-        setStatus('REVISAR', err.message);
-      }
-    }
-
-    function onDownload(){
-      try {
-        const ep = $("EP_DOWNLOAD")?.value.trim() || '';
-        if (!ep) throw new Error('Completá el endpoint de descarga');
-        const a = document.createElement('a');
-        a.href = ep;
-        a.download = '';
-        document.body.appendChild(a); a.click(); a.remove();
-      } catch (e) {
-        alert(e.message);
-      }
-    }
-
-    // ===== wire events (sin optional chaining) =====
-    if (btnProcess) btnProcess.addEventListener('click', onProcess);
-    if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
-    if (btnDownload) btnDownload.addEventListener('click', onDownload);
-
-    // actualizar JSON cuando cambian los controles
-    ['peso_grs','alto_cm','ancho_cm','valor_declarado'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('input', () => {
+        data = JSON.parse(text);
+      }catch(e){
+        // Si el endpoint devuelve un único objeto, permitimos eso también
         try{
-          const current = JSON.parse(jsonOut?.textContent || '{}');
-          readControlsInto(current);
-          if (jsonOut) jsonOut.textContent = JSON.stringify(applyDefaults(current), null, 2);
-          const miss = getMissing(current);
-          const warns = getWarnings(current);
-          renderAlerts(miss, warns);
-          if (btnConfirm) btnConfirm.disabled = miss.length > 0;
-        }catch(e){ /* noop */ }
+          data = JSON.parse(text.replace(/^\s*\[?/, '[').replace(/\]?\s*$/, ']'));
+        }catch(e2){
+          throw new Error('Respuesta no es JSON válido');
+        }
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('Respuesta sin items');
+      }
+
+      // Usamos el primer item
+      const d = data[0];
+
+      // Guardamos y renderizamos “tal cual” para debug
+      out.textContent = JSON.stringify(d, null, 2);
+
+      // Previsualizamos
+      renderPreview(d);
+
+      // Preparamos payload final (whitelist + normalización)
+      const finalD = toFinalPayload(d);
+
+      // Validaciones y avisos
+      const { miss, warns } = getMissing(finalD);
+      renderAlerts(miss, warns, { telefono_estado: finalD.telefono_estado, telefono_msg: finalD.telefono_msg });
+
+      // Persistimos el JSON final en el DOM (para el botón Confirmar/Copiar)
+      out.dataset.final = JSON.stringify(finalD);
+    }
+
+    function copyJSON(){
+      const text = out.dataset.final || out.textContent || '{}';
+      navigator.clipboard.writeText(text).then(()=>{
+        alert('JSON copiado al portapapeles');
       });
+    }
+
+    async function confirmar(){
+      // Acá enviarías el payload final a tu endpoint de “agregar a hoja”
+      const finalText = out.dataset.final;
+      if (!finalText){
+        alert('Primero procesá con IA para generar el payload.');
+        return;
+      }
+      const payload = JSON.parse(finalText);
+
+      // Ejemplo: POST a /agregar
+      // const r = await fetch(ENDPOINT_AGREGAR, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+
+      alert('Listo para enviar a la hoja.\n\n' + JSON.stringify(payload, null, 2));
+    }
+
+    // ----------------- eventos -----------------
+    $('btnAI').addEventListener('click', async () => {
+      $('btnAI').disabled = true;
+      try{
+        await callWorkflow();
+      }catch(e){
+        alerts.innerHTML = '';
+        const s = document.createElement('span');
+        s.className = 'chip bad';
+        s.textContent = 'REVISAR: ' + e.message;
+        alerts.appendChild(s);
+      }finally{
+        $('btnAI').disabled = false;
+      }
     });
 
-    console.log('[Andreani Front] wired');
-  });
+    $('btnCopy').addEventListener('click', copyJSON);
+    $('btnConfirm').addEventListener('click', confirmar);
+
+    // Render inicial mínimo (placeholders)
+    renderPreview({
+      peso_grs: 1000, alto_cm: 10, ancho_cm: 10, valor_declarado: 50000
+    });
+    renderAlerts([], ['Altura no provista (se usa 0)']); // ejemplo visual
   </script>
 </body>
 </html>
