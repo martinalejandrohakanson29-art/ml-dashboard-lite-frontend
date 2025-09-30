@@ -294,48 +294,58 @@
 
     // === Descarga (GET 302) + Clear (POST) sin waits, en orden desde el cliente ===
     function onDownload(){
-      try {
-        const epDownload = $("EP_DOWNLOAD")?.value.trim() || '';
-        const epClear    = $("EP_CLEAR")?.value.trim() || '';
-        if (!epDownload) throw new Error('Completá el endpoint de descarga');
-        setStatus('…', 'Descargando XLSX…');
+    try {
+      const epDownload = document.getElementById("EP_DOWNLOAD")?.value.trim() || '';
+      const epClear    = document.getElementById("EP_CLEAR")?.value.trim() || '';
+      if (!epDownload) throw new Error('Completá el endpoint de descarga');
 
-        // Botón UX
-        if (btnDownload) { btnDownload.disabled = true; btnDownload.textContent = 'Descargando…'; }
+      const btn = document.getElementById('btnDownload');
+      if (btn) { btn.disabled = true; btn.textContent = 'Descargando…'; }
 
-        // 1) Disparo de descarga vía iframe oculto (sigue el 302)
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = epDownload;
+      // 1) Disparo de descarga (iframe oculto)
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = epDownload;
 
-        // 2) Cuando el request de descarga respondió, intento el clear
-        iframe.onload = async () => {
-          try {
-            if (epClear) {
-              const res = await fetch(epClear, { method: 'POST' });
-              if (!res.ok) throw new Error(`Clear falló (${res.status})`);
-              setStatus('OK', 'Descarga iniciada y “Carga” vaciada.');
-              alert('Listo: descarga iniciada y la hoja “Carga” quedó vacía.');
-            } else {
-              setStatus('CORREGIDO', 'Descarga iniciada. Falta configurar EP_CLEAR.');
-              alert('Descarga iniciada. No se configuró el endpoint de Clear.');
-            }
-          } catch (e) {
-            console.error(e);
-            setStatus('REVISAR', 'Descarga ok, pero falló el Clear.');
-            alert('Descarga ok, pero falló el borrado de "Carga". Revisá n8n/CORS/token.');
-          } finally {
-            setTimeout(() => iframe.remove(), 2000);
-            if (btnDownload) { btnDownload.disabled = false; btnDownload.textContent = '⬇️ Descargar XLSX'; }
-          }
-        };
+      let cleared = false;
 
-        document.body.appendChild(iframe);
-      } catch (e) {
-        alert(e.message);
-        setStatus('REVISAR', e.message);
+      async function doClear(){
+        if (cleared) return;
+        cleared = true;
+        if (!epClear) {
+          alert('Descarga iniciada. Falta configurar EP_CLEAR.');
+          return;
+        }
+        try {
+          const res = await fetch(epClear, { method: 'POST', keepalive: true });
+          if (!res.ok) throw new Error(`Clear falló (${res.status})`);
+          alert('Listo: descarga iniciada y la hoja “Carga” quedó vacía.');
+        } catch (e) {
+          console.error(e);
+          alert('Descarga ok, pero falló el borrado de "Carga". Revisá n8n/CORS/token.');
+        } finally {
+          setTimeout(() => iframe.remove(), 2000);
+          if (btn) { btn.disabled = false; btn.textContent = '⬇️ Descargar XLSX'; }
+        }
       }
+
+      // 2) Intento 1: si el onload llega, limpio
+      iframe.onload = doClear;
+
+      // 3) Fallback: si onload nunca llega (caso 302 + attachment), limpio igual a los 2s
+      const fallback = setTimeout(doClear, 2000);
+
+      // Limpieza defensiva si onload ocurrió antes del timeout
+      iframe.onload = async () => {
+        clearTimeout(fallback);
+        await doClear();
+      };
+
+      document.body.appendChild(iframe);
+    } catch (e) {
+      alert(e.message);
     }
+  }
 
     // Eventos
     if (btnProcess) btnProcess.addEventListener('click', onProcess);
