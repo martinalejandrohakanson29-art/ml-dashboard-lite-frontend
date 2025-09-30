@@ -60,11 +60,11 @@
         </div>
         <div class="field" style="min-width:280px">
           <label class="small">Endpoint de descarga XLSX (GET 302)</label>
-          <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/andreani/download?token=TU_TOKEN" />
+          <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/webhook/andreani/download" />
         </div>
         <div class="field" style="min-width:280px">
           <label class="small">Endpoint de limpieza “Carga” (POST)</label>
-          <input id="EP_CLEAR" placeholder="https://tu-n8n/andreani/clear?token=TU_TOKEN" />
+          <input id="EP_CLEAR" placeholder="https://tu-n8n/webhook/andreani/clear" />
         </div>
       </div>
     </section>
@@ -110,6 +110,24 @@
     const $ = (id) => document.getElementById(id);
     const safeText = (el, v) => { if (el) el.textContent = v; };
     const safeVal  = (el, v) => { if (el) el.value = v; };
+
+    // ===== ENDPOINTS por defecto (pueden ser pisados desde los inputs) =====
+    const EP_DEFAULTS = {
+      EP_PROCESS:  'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/process',
+      EP_APPEND:   'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/append',
+      EP_DOWNLOAD: 'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/download',
+      EP_CLEAR:    'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/clear'
+    };
+    const getEP = (id) => {
+      const val = $(id)?.value?.trim();
+      return val || EP_DEFAULTS[id];
+    };
+
+    // Prefill visual (si están vacíos, mostrarlos con el default)
+    ['EP_PROCESS','EP_APPEND','EP_DOWNLOAD','EP_CLEAR'].forEach(id=>{
+      const el = $(id);
+      if (el && !el.value) safeVal(el, EP_DEFAULTS[id]);
+    });
 
     // ===== refs =====
     const badge = $("badge");
@@ -242,8 +260,7 @@
     async function onProcess(){
       try{
         setStatus('…','Procesando');
-        const ep = $("EP_PROCESS")?.value.trim() || '';
-        if (!ep) throw new Error('Completá el endpoint de proceso');
+        const ep = getEP('EP_PROCESS');
         const raw = $("raw")?.value.trim() || '';
         if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
 
@@ -278,8 +295,7 @@
 
     async function onConfirm(){
       try{
-        const ep = $("EP_APPEND")?.value.trim() || '';
-        if (!ep) throw new Error('Completá el endpoint de confirmación (append)');
+        const ep = getEP('EP_APPEND');
         const finalText = (jsonOut?.textContent || '{}');
         const d = JSON.parse(finalText);
         await callJSON(ep, { data: d });
@@ -292,60 +308,50 @@
       }
     }
 
-    // === Descarga (GET 302) + Clear (POST) sin waits, en orden desde el cliente ===
+    // === Descarga (GET 302) + Clear (POST) en orden desde el cliente ===
     function onDownload(){
-    try {
-      const epDownload = document.getElementById("EP_DOWNLOAD")?.value.trim() || '';
-      const epClear    = document.getElementById("EP_CLEAR")?.value.trim() || '';
-      if (!epDownload) throw new Error('Completá el endpoint de descarga');
+      try {
+        const epDownload = getEP('EP_DOWNLOAD');
+        const epClear    = getEP('EP_CLEAR');
 
-      const btn = document.getElementById('btnDownload');
-      if (btn) { btn.disabled = true; btn.textContent = 'Descargando…'; }
+        const btn = document.getElementById('btnDownload');
+        if (btn) { btn.disabled = true; btn.textContent = 'Descargando…'; }
 
-      // 1) Disparo de descarga (iframe oculto)
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = epDownload;
+        // 1) Disparo de descarga (iframe oculto)
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = epDownload;
 
-      let cleared = false;
+        let cleared = false;
 
-      async function doClear(){
-        if (cleared) return;
-        cleared = true;
-        if (!epClear) {
-          alert('Descarga iniciada. Falta configurar EP_CLEAR.');
-          return;
+        async function doClear(){
+          if (cleared) return;
+          cleared = true;
+          try {
+            const res = await fetch(epClear, { method: 'POST', keepalive: true });
+            if (!res.ok) throw new Error(`Clear falló (${res.status})`);
+            alert('Listo: descarga iniciada y la hoja “Carga” quedó vacía.');
+          } catch (e) {
+            console.error(e);
+            alert('Descarga ok, pero falló el borrado de "Carga". Revisá n8n/CORS/token.');
+          } finally {
+            setTimeout(() => iframe.remove(), 2000);
+            if (btn) { btn.disabled = false; btn.textContent = '⬇️ Descargar XLSX'; }
+          }
         }
-        try {
-          const res = await fetch(epClear, { method: 'POST', keepalive: true });
-          if (!res.ok) throw new Error(`Clear falló (${res.status})`);
-          alert('Listo: descarga iniciada y la hoja “Carga” quedó vacía.');
-        } catch (e) {
-          console.error(e);
-          alert('Descarga ok, pero falló el borrado de "Carga". Revisá n8n/CORS/token.');
-        } finally {
-          setTimeout(() => iframe.remove(), 2000);
-          if (btn) { btn.disabled = false; btn.textContent = '⬇️ Descargar XLSX'; }
-        }
+
+        // 2) Intento 1: si el onload llega, limpio
+        const fallback = setTimeout(doClear, 2000);
+        iframe.onload = async () => {
+          clearTimeout(fallback);
+          await doClear();
+        };
+
+        document.body.appendChild(iframe);
+      } catch (e) {
+        alert(e.message);
       }
-
-      // 2) Intento 1: si el onload llega, limpio
-      iframe.onload = doClear;
-
-      // 3) Fallback: si onload nunca llega (caso 302 + attachment), limpio igual a los 2s
-      const fallback = setTimeout(doClear, 2000);
-
-      // Limpieza defensiva si onload ocurrió antes del timeout
-      iframe.onload = async () => {
-        clearTimeout(fallback);
-        await doClear();
-      };
-
-      document.body.appendChild(iframe);
-    } catch (e) {
-      alert(e.message);
     }
-  }
 
     // Eventos
     if (btnProcess) btnProcess.addEventListener('click', onProcess);
