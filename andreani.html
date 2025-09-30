@@ -12,11 +12,11 @@
     .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,.25);display:flex;flex-direction:column;min-height:auto}
     h1{margin:0 0 8px 0;font-size:1.25rem}
     .muted{color:var(--muted);font-size:.92rem;margin:0 0 8px 0}
-    textarea{width:100%;height:320px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical;flex:0 0 auto} 
+    textarea{width:100%;height:320px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical;flex:0 0 auto}
     .row{display:flex;gap:10px;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:var(--btn);color:var(--ink);font-weight:700;cursor:pointer}
     .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
-    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;height:320px;overflow:auto;flex:0 0 auto} 
+    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;height:320px;overflow:auto;flex:0 0 auto}
     .pill{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.85rem}
     .ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399}
     .warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
@@ -59,8 +59,12 @@
           <input id="EP_APPEND" placeholder="https://tu-n8n/webhook/andreani/append" />
         </div>
         <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de descarga XLSX</label>
-          <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/webhook/andreani/download" />
+          <label class="small">Endpoint de descarga XLSX (GET 302)</label>
+          <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/andreani/download?token=TU_TOKEN" />
+        </div>
+        <div class="field" style="min-width:280px">
+          <label class="small">Endpoint de limpieza “Carga” (POST)</label>
+          <input id="EP_CLEAR" placeholder="https://tu-n8n/andreani/clear?token=TU_TOKEN" />
         </div>
       </div>
     </section>
@@ -68,19 +72,18 @@
     <!-- Derecha: Previsualización (payload final) -->
     <section class="card">
       <h1>Previsualización</h1>
-      <!-- Controles 2B: defaults editables -->
+      <!-- Controles: defaults editables -->
       <div class="controls">
         <div class="field"><label class="small">Peso (grs)</label><input id="peso_grs" type="number" placeholder="1000" /></div>
         <div class="field"><label class="small">Alto (cm)</label><input id="alto_cm" type="number" placeholder="10" /></div>
         <div class="field"><label class="small">Ancho (cm)</label><input id="ancho_cm" type="number" placeholder="10" /></div>
         <div class="field"><label class="small">Valor declarado ($)</label><input id="valor_declarado" type="number" placeholder="50000" /></div>
       </div>
-      <!-- Avisos de faltantes (2A) -->
+      <!-- Avisos -->
       <div id="alerts" class="alerts"></div>
       <!-- JSON final -->
       <pre id="jsonOut">{ }</pre>
 
-      <!-- Debajo, estado + detalles para revisar -->
       <div class="hr"></div>
       <div class="row" style="align-items:center;margin:6px 0 10px 0">
         <span id="badge" class="pill warn">Esperando…</span>
@@ -119,7 +122,7 @@
     const btnConfirm = $("btnConfirm");
     const btnDownload = $("btnDownload");
 
-    // ===== state helpers =====
+    // ===== helpers estado =====
     function setStatus(state, text){
       if (badge) badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
       safeText(badge, state || '—');
@@ -132,19 +135,17 @@
       return `${prov} / ${loc} / ${cp}`;
     }
 
-    // whitelist → payload final  (AQUÍ CAMBIO)
+    // whitelist → payload final
     function toFinalPayload(d){
       const keep = [
         'peso_grs','alto_cm','ancho_cm','profundidad_cm','valor_declarado',
         'nombre','apellido','dni','email','tel_codigo','tel_numero',
         'calle','numero','depto','ciudad','partido_o_localidad','provincia','cp','referencias',
-        'telefono_estado','telefono_msg' // ← agregado
+        'telefono_estado','telefono_msg'
       ];
       const src = { ...d };
       if (!src.tel_codigo && src.cel_codigo) src.tel_codigo = src.cel_codigo;
       if (!src.tel_numero && src.cel_numero) src.tel_numero = src.cel_numero;
-
-      // normalizo teléfono a string
       src.tel_codigo = (src.tel_codigo ?? '').toString().trim();
       src.tel_numero = (src.tel_numero ?? '').toString().trim();
 
@@ -153,7 +154,7 @@
       return out;
     }
 
-    // 2B: defaults para dimensiones y valor declarado
+    // Defaults
     const DEFAULTS = { peso_grs: 1000, alto_cm: 10, ancho_cm: 10, valor_declarado: 50000 };
     function applyDefaults(finalD){
       for (const k of Object.keys(DEFAULTS)){
@@ -188,7 +189,6 @@
 
       if (!has(finalD.dni)) miss.push('Falta DNI');
 
-      // Tel: válido si tiene ambos campos O si el workflow dijo OK
       const telEstadoOk = String(finalD.telefono_estado || '').toUpperCase() === 'OK';
       const telOK = (has(finalD.tel_codigo) && has(finalD.tel_numero)) || telEstadoOk;
       if (!telOK) miss.push('Falta teléfono (código y número)');
@@ -196,7 +196,7 @@
       const email = String(finalD.email || '');
       if (!/.+@.+\..+/.test(email)) miss.push('Email faltante o inválido');
 
-      if (!has(finalD.numero)) miss.push('Falta altura de calle'); // "0" no entra acá
+      if (!has(finalD.numero)) miss.push('Falta altura de calle');
       return miss;
     }
     function getWarnings(finalD){
@@ -206,7 +206,6 @@
       return warns;
     }
 
-    // (AQUÍ CAMBIO) agrego chip amarillo con telefono_msg si estado ≠ OK
     function renderAlerts(miss, warns){
       if (!alerts) return;
       alerts.innerHTML = '';
@@ -223,7 +222,7 @@
           s.textContent = msg;
           alerts.appendChild(s);
         }
-      }catch(e){/*noop*/}
+      }catch(e){}
     }
 
     async function callJSON(url, body){
@@ -253,7 +252,6 @@
         let d = out?.data ?? out;
         if (Array.isArray(d)) d = d[0] ?? {};
 
-        // compuestos/estado
         safeVal(plc, buildPLC(d));
         const estado = d.validacion_cp || 'OK';
         const info = d.motivo_validacion || '';
@@ -261,7 +259,6 @@
         safeVal(sugs, sug);
         setStatus(estado, info || '');
 
-        // final
         let finalD = toFinalPayload(d);
         finalD = applyDefaults(finalD);
         writeControls(finalD);
@@ -295,25 +292,57 @@
       }
     }
 
+    // === Descarga (GET 302) + Clear (POST) sin waits, en orden desde el cliente ===
     function onDownload(){
       try {
-        const ep = $("EP_DOWNLOAD")?.value.trim() || '';
-        if (!ep) throw new Error('Completá el endpoint de descarga');
-        const a = document.createElement('a');
-        a.href = ep;
-        a.download = '';
-        document.body.appendChild(a); a.click(); a.remove();
+        const epDownload = $("EP_DOWNLOAD")?.value.trim() || '';
+        const epClear    = $("EP_CLEAR")?.value.trim() || '';
+        if (!epDownload) throw new Error('Completá el endpoint de descarga');
+        setStatus('…', 'Descargando XLSX…');
+
+        // Botón UX
+        if (btnDownload) { btnDownload.disabled = true; btnDownload.textContent = 'Descargando…'; }
+
+        // 1) Disparo de descarga vía iframe oculto (sigue el 302)
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = epDownload;
+
+        // 2) Cuando el request de descarga respondió, intento el clear
+        iframe.onload = async () => {
+          try {
+            if (epClear) {
+              const res = await fetch(epClear, { method: 'POST' });
+              if (!res.ok) throw new Error(`Clear falló (${res.status})`);
+              setStatus('OK', 'Descarga iniciada y “Carga” vaciada.');
+              alert('Listo: descarga iniciada y la hoja “Carga” quedó vacía.');
+            } else {
+              setStatus('CORREGIDO', 'Descarga iniciada. Falta configurar EP_CLEAR.');
+              alert('Descarga iniciada. No se configuró el endpoint de Clear.');
+            }
+          } catch (e) {
+            console.error(e);
+            setStatus('REVISAR', 'Descarga ok, pero falló el Clear.');
+            alert('Descarga ok, pero falló el borrado de "Carga". Revisá n8n/CORS/token.');
+          } finally {
+            setTimeout(() => iframe.remove(), 2000);
+            if (btnDownload) { btnDownload.disabled = false; btnDownload.textContent = '⬇️ Descargar XLSX'; }
+          }
+        };
+
+        document.body.appendChild(iframe);
       } catch (e) {
         alert(e.message);
+        setStatus('REVISAR', e.message);
       }
     }
 
-    // ===== wire events (sin optional chaining) =====
+    // Eventos
     if (btnProcess) btnProcess.addEventListener('click', onProcess);
     if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
     if (btnDownload) btnDownload.addEventListener('click', onDownload);
 
-    // actualizar JSON cuando cambian los controles
+    // Actualizar JSON cuando cambian controles
     ['peso_grs','alto_cm','ancho_cm','valor_declarado'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -326,7 +355,7 @@
           const warns = getWarnings(current);
           renderAlerts(miss, warns);
           if (btnConfirm) btnConfirm.disabled = miss.length > 0;
-        }catch(e){ /* noop */ }
+        }catch(e){}
       });
     });
 
