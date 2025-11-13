@@ -113,10 +113,10 @@
 
     // ===== ENDPOINTS por defecto (pueden ser pisados desde los inputs) =====
     const EP_DEFAULTS = {
-      EP_PROCESS:  'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/process',
-      EP_APPEND:   'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/append',
-      EP_DOWNLOAD: 'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/download',
-      EP_CLEAR:    'https://n8n-on-render-kp7p.onrender.com/webhook/andreani/clear'
+      EP_PROCESS:  'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/process',
+      EP_APPEND:   'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/append',
+      EP_DOWNLOAD: 'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/download',
+      EP_CLEAR:    'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/clear'
     };
     const getEP = (id) => {
       const val = $(id)?.value?.trim();
@@ -173,7 +173,7 @@
     }
 
     // Defaults
-    const DEFAULTS = { peso_grs: 1000, alto_cm: 10, ancho_cm: 10, valor_declarado: 50000 };
+    const DEFAULTS = { peso_grs: 500, alto_cm: 10, ancho_cm: 10, valor_declarado: 100000 };
     function applyDefaults(finalD){
       for (const k of Object.keys(DEFAULTS)){
         const v = finalD[k];
