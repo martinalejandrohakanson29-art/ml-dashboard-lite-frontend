@@ -404,8 +404,10 @@
           pedidoSelect.innerHTML = '<option value="">Elegí un pedido…</option>';
           data.forEach(p => {
             const numero = p.numero_pedido || '';
+            const numCorto = numero ? numero.replace(/^0+/, '') : '';
             const lineas = Array.isArray(p.observaciones_lineas) ? p.observaciones_lineas : [];
-            // intento simple de detectar nombre en las líneas
+
+            // nombre detectado por líneas (fallback)
             const nombreLinea = lineas.find(l => {
               if (!l) return false;
               const t = l.trim();
@@ -416,11 +418,16 @@
               if (pref.some(pfx => upper.startsWith(pfx))) return false;
               return true;
             }) || '';
-            const label = numero
-              ? `#${numero} – ${nombreLinea || 'sin nombre'}`
-              : (nombreLinea || '(sin número)');
+
+            // usamos primero nombre_responsable, si no hay caemos a nombreLinea
+            const nombre = (p.nombre_responsable || nombreLinea || '').trim() || 'sin nombre';
+
+            const label = numCorto
+              ? `${numCorto} - ${nombre}`
+              : nombre;
+
             const opt = document.createElement('option');
-            opt.value = numero;
+            opt.value = numero; // seguimos usando el número completo (con ceros) como value
             opt.textContent = label;
             pedidoSelect.appendChild(opt);
           });
