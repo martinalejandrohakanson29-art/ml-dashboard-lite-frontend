@@ -33,6 +33,16 @@
     .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
     .controls .field{gap:2px}
     .controls .field input{height:36px}
+    /* select de pedidos */
+    .sel{
+      min-width:260px;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid #1f2937;
+      background:#0b1220;
+      color:var(--text);
+      font-size:.9rem;
+    }
   </style>
 </head>
 <body>
@@ -40,8 +50,19 @@
     <!-- Izquierda: Entrada cruda -->
     <section class="card">
       <h1>Entrada cruda</h1>
-      <p class="muted">Pegá el texto del cliente. Luego presioná <strong>Procesar con IA</strong>.</p>
+      <p class="muted">Ahora podés traer los pedidos desde Cover y pegar el texto del cliente con un click.</p>
+
+      <!-- NUEVO: carga de pedidos desde Cover -->
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn" id="btnLoadCover">📥 Traer pedidos desde Cover</button>
+        <select id="pedidoSelect" class="sel">
+          <option value="">Elegí un pedido…</option>
+        </select>
+      </div>
+
+      <p class="muted" style="margin-top:0">O, si querés, seguí pegando el texto a mano como antes:</p>
       <textarea id="raw" placeholder="Ej: Nombre completo: ... DNI: ... Domicilio: ... Ciudad: ... Provincia: ... Teléfono: ... E-mail: ... Código postal: ... Referencias: ..."></textarea>
+
       <div class="hr"></div>
       <div class="row">
         <button class="btn" id="btnProcess">⚙️ Procesar con IA</button>
@@ -65,6 +86,10 @@
         <div class="field" style="min-width:280px">
           <label class="small">Endpoint de limpieza “Carga” (POST)</label>
           <input id="EP_CLEAR" placeholder="https://tu-n8n/webhook/andreani/clear" />
+        </div>
+        <div class="field" style="min-width:280px">
+          <label class="small">Endpoint pedidos Cover (GET)</label>
+          <input id="EP_COVER" placeholder="https://tu-n8n/webhook/cover-pedidos-pendientes" />
         </div>
       </div>
     </section>
@@ -116,7 +141,8 @@
       EP_PROCESS:  'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/process',
       EP_APPEND:   'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/append',
       EP_DOWNLOAD: 'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/download',
-      EP_CLEAR:    'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/clear'
+      EP_CLEAR:    'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/clear',
+      EP_COVER:    'https://n8n-on-render-production-52f0.up.railway.app/webhook/cover-pedidos-pendientes'
     };
     const getEP = (id) => {
       const val = $(id)?.value?.trim();
@@ -124,7 +150,7 @@
     };
 
     // Prefill visual (si están vacíos, mostrarlos con el default)
-    ['EP_PROCESS','EP_APPEND','EP_DOWNLOAD','EP_CLEAR'].forEach(id=>{
+    ['EP_PROCESS','EP_APPEND','EP_DOWNLOAD','EP_CLEAR','EP_COVER'].forEach(id=>{
       const el = $(id);
       if (el && !el.value) safeVal(el, EP_DEFAULTS[id]);
     });
@@ -139,6 +165,11 @@
     const btnProcess = $("btnProcess");
     const btnConfirm = $("btnConfirm");
     const btnDownload = $("btnDownload");
+    const btnLoadCover = $("btnLoadCover");
+    const pedidoSelect = $("pedidoSelect");
+
+    // estado local de pedidos
+    let coverPedidos = [];
 
     // ===== helpers estado =====
     function setStatus(state, text){
@@ -262,7 +293,7 @@
         setStatus('…','Procesando');
         const ep = getEP('EP_PROCESS');
         const raw = $("raw")?.value.trim() || '';
-        if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda');
+        if (!raw) throw new Error('Pegá el texto del cliente en Entrada cruda, o elegí un pedido de Cover');
 
         const payload = { body: { raw } };
         const out = await callJSON(ep, payload);
@@ -353,10 +384,80 @@
       }
     }
 
+    // === NUEVO: traer pedidos desde Cover ===
+    async function loadPedidosCover(){
+      try{
+        setStatus('…','Cargando pedidos de Cover');
+        const ep = getEP('EP_COVER');
+        const res = await fetch(ep);
+        const ct = res.headers.get('content-type') || '';
+        const text = await res.text();
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0,200)}`);
+        if (!ct.includes('application/json')) throw new Error('Respuesta no JSON desde Cover');
+
+        const data = JSON.parse(text);
+        if (!Array.isArray(data)) throw new Error('Formato inesperado: se esperaba un arreglo');
+
+        coverPedidos = data;
+
+        if (pedidoSelect){
+          pedidoSelect.innerHTML = '<option value="">Elegí un pedido…</option>';
+          data.forEach(p => {
+            const numero = p.numero_pedido || '';
+            const lineas = Array.isArray(p.observaciones_lineas) ? p.observaciones_lineas : [];
+            // intento simple de detectar nombre en las líneas
+            const nombreLinea = lineas.find(l => {
+              if (!l) return false;
+              const t = l.trim();
+              if (!t) return false;
+              const upper = t.toUpperCase();
+              if (upper === 'OBSERVACIONES') return false;
+              const pref = ['DNI:','DOMICILIO:','CIUDAD:','PROVINCIA:','TEL:','TELEFONO:','E-MAIL:','CODIGO POSTAL:','REFERENCIA','REFERENCIAS'];
+              if (pref.some(pfx => upper.startsWith(pfx))) return false;
+              return true;
+            }) || '';
+            const label = numero
+              ? `#${numero} – ${nombreLinea || 'sin nombre'}`
+              : (nombreLinea || '(sin número)');
+            const opt = document.createElement('option');
+            opt.value = numero;
+            opt.textContent = label;
+            pedidoSelect.appendChild(opt);
+          });
+        }
+
+        setStatus('OK', `Se cargaron ${data.length} pedidos de Cover`);
+      }catch(err){
+        console.error('[Andreani Front] loadPedidosCover error:', err);
+        setStatus('REVISAR', 'No se pudieron cargar pedidos de Cover: ' + err.message);
+      }
+    }
+
+    function onPedidoChange(){
+      if (!pedidoSelect) return;
+      const id = pedidoSelect.value;
+      if (!id) return;
+      const pedido = coverPedidos.find(p => (p.numero_pedido || '') === id);
+      if (!pedido) return;
+
+      const lineas = Array.isArray(pedido.observaciones_lineas)
+        ? pedido.observaciones_lineas
+        : (pedido.observaciones_raw ? String(pedido.observaciones_raw).split(/\r?\n/) : []);
+
+      const rawEl = $("raw");
+      if (rawEl){
+        rawEl.value = lineas.join('\n');
+        rawEl.scrollTop = 0;
+      }
+      setStatus('OK', `Pedido ${id} copiado al cuadro de texto`);
+    }
+
     // Eventos
     if (btnProcess) btnProcess.addEventListener('click', onProcess);
     if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
     if (btnDownload) btnDownload.addEventListener('click', onDownload);
+    if (btnLoadCover) btnLoadCover.addEventListener('click', loadPedidosCover);
+    if (pedidoSelect) pedidoSelect.addEventListener('change', onPedidoChange);
 
     // Actualizar JSON cuando cambian controles
     ['peso_grs','alto_cm','ancho_cm','valor_declarado'].forEach(id => {
