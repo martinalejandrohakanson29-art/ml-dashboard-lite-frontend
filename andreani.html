@@ -52,7 +52,7 @@
       <h1>Entrada cruda</h1>
       <p class="muted">Ahora podés traer los pedidos desde Cover y pegar el texto del cliente con un click.</p>
 
-      <!-- NUEVO: carga de pedidos desde Cover -->
+      <!-- carga de pedidos desde Cover -->
       <div class="row" style="margin-bottom:8px">
         <button class="btn" id="btnLoadCover">📥 Traer pedidos desde Cover</button>
         <select id="pedidoSelect" class="sel">
@@ -106,8 +106,10 @@
       </div>
       <!-- Avisos -->
       <div id="alerts" class="alerts"></div>
-      <!-- JSON final -->
-      <pre id="jsonOut">{ }</pre>
+      <!-- TEXTO LIMPIO PARA LA HOJA -->
+      <pre id="prettyOut"></pre>
+      <!-- JSON oculto (se usa internamente) -->
+      <pre id="jsonOut" style="display:none">{}</pre>
 
       <div class="hr"></div>
       <div class="row" style="align-items:center;margin:6px 0 10px 0">
@@ -136,7 +138,7 @@
     const safeText = (el, v) => { if (el) el.textContent = v; };
     const safeVal  = (el, v) => { if (el) el.value = v; };
 
-    // ===== ENDPOINTS por defecto (pueden ser pisados desde los inputs) =====
+    // ===== ENDPOINTS por defecto =====
     const EP_DEFAULTS = {
       EP_PROCESS:  'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/process',
       EP_APPEND:   'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/append',
@@ -149,7 +151,6 @@
       return val || EP_DEFAULTS[id];
     };
 
-    // Prefill visual (si están vacíos, mostrarlos con el default)
     ['EP_PROCESS','EP_APPEND','EP_DOWNLOAD','EP_CLEAR','EP_COVER'].forEach(id=>{
       const el = $(id);
       if (el && !el.value) safeVal(el, EP_DEFAULTS[id]);
@@ -158,7 +159,8 @@
     // ===== refs =====
     const badge = $("badge");
     const summary = $("summary");
-    const jsonOut = $("jsonOut");
+    const jsonOut = $("jsonOut");    // oculto
+    const prettyOut = $("prettyOut"); // visible
     const plc = $("plc");
     const sugs = $("sugs");
     const alerts = $("alerts");
@@ -168,7 +170,6 @@
     const btnLoadCover = $("btnLoadCover");
     const pedidoSelect = $("pedidoSelect");
 
-    // estado local de pedidos
     let coverPedidos = [];
 
     // ===== helpers estado =====
@@ -182,6 +183,77 @@
       const loc  = (d.partido_o_localidad || d.ciudad || '').toString().toUpperCase();
       const cp   = (d.cp||'').toString();
       return `${prov} / ${loc} / ${cp}`;
+    }
+
+    // Formatea DNI con puntos
+    function formatDni(dni){
+      const digits = String(dni || '').replace(/\D/g, '');
+      if (digits.length === 8){
+        return digits.replace(/(\d{2})(\d{3})(\d{3})/, '$1.$2.$3');
+      }
+      if (digits.length === 7){
+        return digits.replace(/(\d{1})(\d{3})(\d{3})/, '$1.$2.$3');
+      }
+      return digits;
+    }
+
+    // Extraer "Referencia de casa" de referencias
+    function extractReferencia(ref){
+      if (!ref) return '';
+      let txt = String(ref);
+      const m = txt.match(/referencia\s*de\s*casa\s*[:\-]?\s*(.+)$/i);
+      if (m && m[1]){
+        txt = m[1];
+      }
+      txt = txt.replace(/[.,;]+$/,'').trim().toUpperCase();
+      return txt;
+    }
+
+    // Construye el texto limpio para la hoja
+    function buildPretty(d){
+      if (!d || typeof d !== 'object') return '';
+
+      const nombre = (d.nombre || '').toString().trim();
+      const apellido = (d.apellido || '').toString().trim();
+      const nombreCompleto = `${apellido} ${nombre}`.trim().toUpperCase();
+
+      const dni = formatDni(d.dni);
+      const calle = (d.calle || '').toString().toUpperCase();
+      const numero = (d.numero || '').toString().toUpperCase();
+      const ciudad = (d.ciudad || d.partido_o_localidad || '').toString().toUpperCase();
+      const provincia = (d.provincia || '').toString().toUpperCase();
+      const cp = (d.cp || '').toString().toUpperCase();
+      const email = (d.email || '').toString();
+
+      const telCod = (d.tel_codigo || '').toString().trim();
+      const telNum = (d.tel_numero || '').toString().trim();
+      let tel = '';
+      if (telCod && telNum) tel = `${telCod}-${telNum}`;
+      else tel = (telCod + telNum).trim();
+
+      const referencias = extractReferencia(d.referencias || '');
+
+      const peso = d.peso_grs ?? '';
+      const alto = d.alto_cm ?? '';
+      const ancho = d.ancho_cm ?? '';
+      const valorDec = d.valor_declarado ?? '';
+
+      const lines = [];
+      if (nombreCompleto) lines.push(nombreCompleto);
+      if (dni) lines.push(`DNI:${dni}`);
+      if (calle || numero) lines.push(`DOMICILIO: ${calle} ${numero}`.trim());
+      if (ciudad) lines.push(`CIUDAD: ${ciudad}`);
+      if (provincia) lines.push(`PROVINCIA: ${provincia}`);
+      if (tel) lines.push(`TEL:${tel}`);
+      if (email) lines.push(`E-MAIL: ${email}`);
+      if (cp) lines.push(`CODIGO POSTAL:${cp}`);
+      if (referencias) lines.push(`REFERENCIA DE CASA: ${referencias}`);
+      if (peso !== '') lines.push(`PESO: ${peso}`);
+      if (alto !== '') lines.push(`ALTO: ${alto}`);
+      if (ancho !== '') lines.push(`ANCHO: ${ancho}`);
+      if (valorDec !== '') lines.push(`VALOR DECLARADO: ${valorDec}`);
+
+      return lines.join('\n');
     }
 
     // whitelist → payload final
@@ -310,7 +382,10 @@
         let finalD = toFinalPayload(d);
         finalD = applyDefaults(finalD);
         writeControls(finalD);
-        if (jsonOut) jsonOut.textContent = JSON.stringify(finalD, null, 2);
+
+        if (jsonOut) jsonOut.textContent = JSON.stringify(finalD);
+        if (prettyOut) prettyOut.textContent = buildPretty(finalD);
+
         const miss = getMissing(finalD);
         const warns = getWarnings(finalD);
         renderAlerts(miss, warns);
@@ -319,7 +394,8 @@
       }catch(err){
         console.error('[Andreani Front] onProcess error:', err);
         setStatus('REVISAR', err.message);
-        if (jsonOut) jsonOut.textContent = JSON.stringify({ error: err.message }, null, 2);
+        if (jsonOut) jsonOut.textContent = JSON.stringify({ error: err.message });
+        if (prettyOut) prettyOut.textContent = 'Error: ' + err.message;
         if (btnConfirm) btnConfirm.disabled = true;
       }
     }
@@ -339,7 +415,7 @@
       }
     }
 
-    // === Descarga (GET 302) + Clear (POST) en orden desde el cliente ===
+    // === Descarga + Clear ===
     function onDownload(){
       try {
         const epDownload = getEP('EP_DOWNLOAD');
@@ -348,7 +424,6 @@
         const btn = document.getElementById('btnDownload');
         if (btn) { btn.disabled = true; btn.textContent = 'Descargando…'; }
 
-        // 1) Disparo de descarga (iframe oculto)
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = epDownload;
@@ -371,7 +446,6 @@
           }
         }
 
-        // 2) Intento 1: si el onload llega, limpio
         const fallback = setTimeout(doClear, 2000);
         iframe.onload = async () => {
           clearTimeout(fallback);
@@ -384,7 +458,7 @@
       }
     }
 
-    // === NUEVO: traer pedidos desde Cover ===
+    // === Traer pedidos desde Cover ===
     async function loadPedidosCover(){
       try{
         setStatus('…','Cargando pedidos de Cover');
@@ -407,7 +481,6 @@
             const numCorto = numero ? numero.replace(/^0+/, '') : '';
             const lineas = Array.isArray(p.observaciones_lineas) ? p.observaciones_lineas : [];
 
-            // nombre detectado por líneas (fallback)
             const nombreLinea = lineas.find(l => {
               if (!l) return false;
               const t = l.trim();
@@ -419,7 +492,6 @@
               return true;
             }) || '';
 
-            // usamos primero nombre_responsable, si no hay caemos a nombreLinea
             const nombre = (p.nombre_responsable || nombreLinea || '').trim() || 'sin nombre';
 
             const label = numCorto
@@ -427,7 +499,7 @@
               : nombre;
 
             const opt = document.createElement('option');
-            opt.value = numero; // seguimos usando el número completo (con ceros) como value
+            opt.value = numero;
             opt.textContent = label;
             pedidoSelect.appendChild(opt);
           });
@@ -466,7 +538,7 @@
     if (btnLoadCover) btnLoadCover.addEventListener('click', loadPedidosCover);
     if (pedidoSelect) pedidoSelect.addEventListener('change', onPedidoChange);
 
-    // Actualizar JSON cuando cambian controles
+    // Actualizar al cambiar peso/alto/ancho/valor
     ['peso_grs','alto_cm','ancho_cm','valor_declarado'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -474,9 +546,11 @@
         try{
           const current = JSON.parse(jsonOut?.textContent || '{}');
           readControlsInto(current);
-          if (jsonOut) jsonOut.textContent = JSON.stringify(applyDefaults(current), null, 2);
-          const miss = getMissing(current);
-          const warns = getWarnings(current);
+          const withDefaults = applyDefaults(current);
+          if (jsonOut) jsonOut.textContent = JSON.stringify(withDefaults);
+          if (prettyOut) prettyOut.textContent = buildPretty(withDefaults);
+          const miss = getMissing(withDefaults);
+          const warns = getWarnings(withDefaults);
           renderAlerts(miss, warns);
           if (btnConfirm) btnConfirm.disabled = miss.length > 0;
         }catch(e){}
