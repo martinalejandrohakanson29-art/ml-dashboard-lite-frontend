@@ -69,6 +69,13 @@
         <button class="btn" id="btnConfirm" disabled>✅ Confirmar y agregar a hoja</button>
         <button class="btn" id="btnDownload">⬇️ Descargar XLSX</button>
       </div>
+
+      <!-- NUEVO: lista de pedidos agregados en esta sesión -->
+      <div class="hr"></div>
+      <p class="small">Pedidos agregados en esta sesión:</p>
+      <div id="addedList" class="alerts"></div>
+      <!-- FIN NUEVO -->
+
       <div class="hr"></div>
       <div class="row">
         <div class="field" style="min-width:280px">
@@ -169,8 +176,10 @@
     const btnDownload = $("btnDownload");
     const btnLoadCover = $("btnLoadCover");
     const pedidoSelect = $("pedidoSelect");
+    const addedList = $("addedList"); // NUEVO
 
     let coverPedidos = [];
+    let addedItems = []; // NUEVO: pedidos agregados en esta sesión
 
     // ===== helpers estado =====
     function setStatus(state, text){
@@ -184,6 +193,35 @@
       const cp   = (d.cp||'').toString();
       return `${prov} / ${loc} / ${cp}`;
     }
+
+    // NUEVO: obtener etiqueta legible del pedido actual
+    function getCurrentPedidoLabel(){
+      // Si viene de Cover, usamos la opción seleccionada
+      if (pedidoSelect && pedidoSelect.value){
+        const opt = pedidoSelect.options[pedidoSelect.selectedIndex];
+        if (opt && opt.textContent) return opt.textContent.trim();
+      }
+      // Si no, usamos la primera línea no vacía del texto crudo
+      const rawEl = $("raw");
+      if (rawEl && rawEl.value){
+        const line = rawEl.value.split(/\r?\n/).find(l => l.trim());
+        if (line) return line.trim().toUpperCase();
+      }
+      return 'Pedido manual';
+    }
+
+    // NUEVO: renderizar lista de pedidos agregados
+    function renderAddedList(){
+      if (!addedList) return;
+      addedList.innerHTML = '';
+      addedItems.forEach(lbl => {
+        const s = document.createElement('span');
+        s.className = 'chip ok';
+        s.textContent = lbl;
+        addedList.appendChild(s);
+      });
+    }
+    // FIN NUEVO helpers
 
     // Formatea DNI con puntos
     function formatDni(dni){
@@ -409,6 +447,15 @@
         setStatus('OK', 'Agregado a la hoja Carga');
         const rawEl = $("raw");
         if (rawEl) rawEl.value = '';
+
+        // NUEVO: marcar este pedido como agregado
+        const label = getCurrentPedidoLabel();
+        if (label){
+          if (!addedItems.includes(label)) addedItems.push(label);
+          renderAddedList();
+        }
+        // FIN NUEVO
+
       }catch(err){
         console.error('[Andreani Front] onConfirm error:', err);
         setStatus('REVISAR', err.message);
@@ -436,6 +483,12 @@
           try {
             const res = await fetch(epClear, { method: 'POST', keepalive: true });
             if (!res.ok) throw new Error(`Clear falló (${res.status})`);
+
+            // NUEVO: limpiar la lista de pedidos agregados cuando se descarga el XLSX
+            addedItems = [];
+            renderAddedList();
+            // FIN NUEVO
+
             alert('Listo: descarga iniciada y la hoja “Carga” quedó vacía.');
           } catch (e) {
             console.error(e);
