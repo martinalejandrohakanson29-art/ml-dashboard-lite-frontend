@@ -3,133 +3,264 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Envíos Andreani – Etiquetas</title>
+  <title>🚀 n8n Andreani Envío Express</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#0b1220;--card:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--btn:#f8fafc;--ink:#0b1220}
+    :root{
+        --primary-color: #6366f1; /* Indigo 500 */
+        --primary-hover: #4f46e5; /* Indigo 600 */
+        --bg-main: #f9fafb; /* Gray 50 */
+        --bg-card: #ffffff;
+        --border-color: #e5e7eb; /* Gray 200 */
+        --text-main: #1f2937; /* Gray 800 */
+        --text-muted: #6b7280; /* Gray 500 */
+        --ok-color: #10b981; /* Green */
+        --warn-color: #f59e0b; /* Amber */
+        --bad-color: #ef4444; /* Red */
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px}
-    .wrap{width:100%;max-width:1100px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
-    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,.25);display:flex;flex-direction:column;min-height:auto}
-    h1{margin:0 0 8px 0;font-size:1.25rem}
-    .muted{color:var(--muted);font-size:.92rem;margin:0 0 8px 0}
-    textarea{width:100%;height:320px;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px;resize:vertical;flex:0 0 auto}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:var(--btn);color:var(--ink);font-weight:700;cursor:pointer}
-    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
-    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#0b1220;border:1px solid #1f2937;border-radius:10px;padding:10px;height:320px;overflow:auto;flex:0 0 auto}
-    .pill{display:inline-block;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.85rem}
-    .ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399}
-    .warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
-    .bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
-    .field{display:flex;flex-direction:column;gap:4px}
-    .field input{width:100%;border-radius:10px;border:1px solid #1f2937;background:#0b1220;color:var(--text);padding:10px}
-    .small{font-size:.85rem;color:var(--muted)}
-    .hr{height:1px;background:#1f2937;margin:12px 0}
-    .alerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-    .chip{border-radius:999px;padding:6px 10px;font-size:.85rem;font-weight:700}
-    .chip.bad{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#f87171}
-    .chip.warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
-    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
-    .controls .field{gap:2px}
-    .controls .field input{height:36px}
+    body{
+        margin:0;
+        font-family:'Inter', sans-serif;
+        background:var(--bg-main);
+        color:var(--text-main);
+        min-height:100vh;
+        display:flex;
+        align-items:flex-start;
+        justify-content:center;
+        padding:40px 20px;
+    }
+    .wrap{
+        width:100%;
+        max-width:1200px;
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:24px;
+        align-items:flex-start;
+    }
+    @media (max-width: 900px) {
+      .wrap {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card{
+        background:var(--bg-card);
+        border:1px solid var(--border-color);
+        border-radius:12px;
+        padding:24px;
+        box-shadow:0 4px 12px rgba(0,0,0,.05);
+        display:flex;
+        flex-direction:column;
+        gap:16px;
+    }
+    h1{margin:0;font-size:1.5rem;color:var(--primary-hover);}
+    .muted{color:var(--text-muted);font-size:.95rem;margin:0}
+    textarea, input, select{
+        width:100%;
+        border-radius:8px;
+        border:1px solid var(--border-color);
+        background:var(--bg-card);
+        color:var(--text-main);
+        padding:12px;
+        font-size:1rem;
+        transition:border-color 0.2s;
+    }
+    textarea{height:280px;resize:vertical;}
+    input:focus, select:focus, textarea:focus{
+        border-color:var(--primary-color);
+        outline:none;
+        box-shadow:0 0 0 2px rgba(99, 102, 241, 0.2); /* Indigo 500 with opacity */
+    }
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+    .btn{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:10px 18px;
+        border-radius:8px;
+        font-weight:600;
+        cursor:pointer;
+        transition:all 0.2s ease;
+        border:none;
+        font-size:1rem;
+    }
+    .btn-primary{
+        background:var(--primary-color);
+        color:white;
+    }
+    .btn-primary:hover:not(:disabled){
+        background:var(--primary-hover);
+        transform:translateY(-1px);
+        box-shadow:0 6px 12px rgba(99, 102, 241, 0.3);
+    }
+    .btn-secondary{
+        background:var(--border-color);
+        color:var(--text-main);
+    }
+    .btn-secondary:hover:not(:disabled){
+        background:#d1d5db; /* Gray 300 */
+    }
+    .btn:disabled{
+        opacity:0.6;
+        cursor:not-allowed;
+    }
+
+    pre{
+        margin:0;
+        white-space:pre-wrap;
+        word-break:break-word;
+        background:#f3f4f6; /* Gray 100 */
+        border:1px solid var(--border-color);
+        border-radius:8px;
+        padding:16px;
+        min-height:280px;
+        overflow:auto;
+        font-family:monospace;
+        font-size:0.95rem;
+    }
+    .pill{
+        display:inline-block;
+        border-radius:999px;
+        padding:6px 14px;
+        font-weight:700;
+        font-size:.85rem;
+        text-transform:uppercase;
+        letter-spacing:0.5px;
+    }
+    .ok{background:#d1fae5;border:1px solid #a7f3d0;color:var(--ok-color)}
+    .warn{background:#fef3c7;border:1px solid #fde68a;color:var(--warn-color)}
+    .bad{background:#fee2e2;border:1px solid #fecaca;color:var(--bad-color)}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+    .field{display:flex;flex-direction:column;gap:6px;}
+    .small{font-size:.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;}
+    .hr{height:1px;background:var(--border-color);margin:20px 0;}
+    .alerts{display:flex;flex-wrap:wrap;gap:8px;}
+    .chip{
+        border-radius:999px;
+        padding:6px 12px;
+        font-size:.8rem;
+        font-weight:600;
+        border:1px solid transparent;
+    }
+    .chip.bad{background:var(--bad-color);border-color:var(--bad-color);color:white}
+    .chip.warn{background:var(--warn-color);border-color:var(--warn-color);color:white}
+    .chip.ok{background:var(--ok-color);border-color:var(--ok-color);color:white}
+
+    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+    .controls .field input{height:44px;}
     /* select de pedidos */
-    .sel{
-      min-width:260px;
-      padding:8px 10px;
-      border-radius:10px;
-      border:1px solid #1f2937;
-      background:#0b1220;
-      color:var(--text);
-      font-size:.9rem;
+    .sel{min-width:280px;padding:12px;height:44px;}
+
+    /* Nuevo estilo para la sección de Endpoints */
+    .endpoints-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+    }
+    .endpoints-grid input {
+      font-size: 0.9rem;
+      padding: 8px;
+    }
+    .endpoints-grid label {
+      font-weight: 400;
+    }
+
+    /* Estilo para los detalles finales */
+    .details-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 6px 0 10px 0;
     }
   </style>
 </head>
 <body>
   <main class="wrap">
-    <!-- Izquierda: Entrada cruda -->
     <section class="card">
-      <h1>Entrada cruda</h1>
-      <p class="muted">Ahora podés traer los pedidos desde Cover y pegar el texto del cliente con un click.</p>
+      <h1>📦 Entrada de Pedido</h1>
+      <p class="muted">1. Carga o pega el texto del cliente. Luego, **Procesar con IA**.</p>
 
-      <!-- carga de pedidos desde Cover -->
       <div class="row" style="margin-bottom:8px">
-        <button class="btn" id="btnLoadCover">📥 Traer pedidos desde Cover</button>
+        <button class="btn btn-secondary" id="btnLoadCover">📥 Cargar pedidos de Cover</button>
         <select id="pedidoSelect" class="sel">
           <option value="">Elegí un pedido…</option>
         </select>
       </div>
 
-      <p class="muted" style="margin-top:0">O, si querés, seguí pegando el texto a mano como antes:</p>
-      <textarea id="raw" placeholder="Ej: Nombre completo: ... DNI: ... Domicilio: ... Ciudad: ... Provincia: ... Teléfono: ... E-mail: ... Código postal: ... Referencias: ..."></textarea>
+      <textarea id="raw" placeholder="Pega aquí los datos del cliente, por ejemplo:
+Nombre completo: ...
+DNI: ...
+Domicilio: ...
+..."></textarea>
 
       <div class="hr"></div>
       <div class="row">
-        <button class="btn" id="btnProcess">⚙️ Procesar con IA</button>
-        <button class="btn" id="btnConfirm" disabled>✅ Confirmar y agregar a hoja</button>
-        <button class="btn" id="btnDownload">⬇️ Descargar XLSX</button>
+        <button class="btn btn-primary" id="btnProcess">⚙️ Procesar con IA</button>
+        <button class="btn btn-primary" id="btnConfirm" disabled>✅ Confirmar y agregar a hoja</button>
+        <button class="btn btn-secondary" id="btnDownload">⬇️ Descargar XLSX</button>
       </div>
 
-      <!-- NUEVO: lista de pedidos agregados en esta sesión -->
       <div class="hr"></div>
-      <p class="small">Pedidos agregados en esta sesión:</p>
+      <p class="small">✅ PEDIDOS AGREGADOS EN ESTA SESIÓN:</p>
       <div id="addedList" class="alerts"></div>
-      <!-- FIN NUEVO -->
-
       <div class="hr"></div>
-      <div class="row">
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de proceso (n8n)</label>
+      <p class="small">⚙️ CONFIGURACIÓN DE ENDPOINTS (N8N):</p>
+      <div class="endpoints-grid">
+        <div class="field">
+          <label class="small">Proceso (POST)</label>
           <input id="EP_PROCESS" placeholder="https://tu-n8n/webhook/andreani/process" />
         </div>
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de confirmación (append)</label>
+        <div class="field">
+          <label class="small">Confirmación (POST)</label>
           <input id="EP_APPEND" placeholder="https://tu-n8n/webhook/andreani/append" />
         </div>
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de descarga XLSX (GET 302)</label>
+        <div class="field">
+          <label class="small">Descarga XLSX (GET)</label>
           <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/webhook/andreani/download" />
         </div>
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint de limpieza “Carga” (POST)</label>
+        <div class="field">
+          <label class="small">Limpieza "Carga" (POST)</label>
           <input id="EP_CLEAR" placeholder="https://tu-n8n/webhook/andreani/clear" />
         </div>
-        <div class="field" style="min-width:280px">
-          <label class="small">Endpoint pedidos Cover (GET)</label>
+        <div class="field">
+          <label class="small">Pedidos Cover (GET)</label>
           <input id="EP_COVER" placeholder="https://tu-n8n/webhook/cover-pedidos-pendientes" />
         </div>
       </div>
     </section>
 
-    <!-- Derecha: Previsualización (payload final) -->
     <section class="card">
-      <h1>Previsualización</h1>
-      <!-- Controles: defaults editables -->
+      <h1>✨ Previsualización y Validación</h1>
+      <p class="muted">2. Revisa los datos, corrige lo necesario y Confirma.</p>
+
+      <p class="small">📦 DIMENSIONES Y VALOR POR DEFECTO:</p>
       <div class="controls">
-        <div class="field"><label class="small">Peso (grs)</label><input id="peso_grs" type="number" placeholder="1000" /></div>
-        <div class="field"><label class="small">Alto (cm)</label><input id="alto_cm" type="number" placeholder="10" /></div>
-        <div class="field"><label class="small">Ancho (cm)</label><input id="ancho_cm" type="number" placeholder="10" /></div>
-        <div class="field"><label class="small">Valor declarado ($)</label><input id="valor_declarado" type="number" placeholder="50000" /></div>
+        <div class="field"><label class="small">Peso (grs)</label><input id="peso_grs" type="number" placeholder="500" min="1" /></div>
+        <div class="field"><label class="small">Alto (cm)</label><input id="alto_cm" type="number" placeholder="10" min="1" /></div>
+        <div class="field"><label class="small">Ancho (cm)</label><input id="ancho_cm" type="number" placeholder="10" min="1" /></div>
+        <div class="field"><label class="small">Valor declarado ($)</label><input id="valor_declarado" type="number" placeholder="100000" min="1" /></div>
       </div>
-      <!-- Avisos -->
+      
+      <div class="hr"></div>
+      <p class="small">⚠️ AVISOS DE VALIDACIÓN:</p>
       <div id="alerts" class="alerts"></div>
-      <!-- TEXTO LIMPIO PARA LA HOJA -->
+      
+      <p class="small">📋 DATOS FINALES PARA LA HOJA:</p>
       <pre id="prettyOut"></pre>
-      <!-- JSON oculto (se usa internamente) -->
       <pre id="jsonOut" style="display:none">{}</pre>
 
       <div class="hr"></div>
-      <div class="row" style="align-items:center;margin:6px 0 10px 0">
+      <div class="details-row">
         <span id="badge" class="pill warn">Esperando…</span>
-        <span id="summary" class="small">—</span>
+        <span id="summary" class="muted">—</span>
       </div>
       <div class="grid">
         <div class="field">
-          <label class="small">Provincia / Localidad / CP (compuesto)</label>
+          <label class="small">Provincia / Localidad / CP</label>
           <input id="plc" readonly />
         </div>
         <div class="field">
-          <label class="small">Sugerencias (si REVISAR/CORREGIDO)</label>
+          <label class="small">Sugerencias (CP / Localidad)</label>
           <input id="sugs" readonly />
         </div>
       </div>
@@ -138,6 +269,9 @@
 
   <script>
   window.addEventListener('DOMContentLoaded', () => {
+    // Código JavaScript exactamente igual al que ya tenías, pegado a continuación.
+    // **No lo modifico** para asegurar que la lógica de n8n funcione perfecto.
+
     console.log('[Andreani Front] init');
 
     // ===== util =====
