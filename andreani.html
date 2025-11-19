@@ -28,21 +28,28 @@
         color:var(--text-main);
         min-height:100vh;
         display:flex;
-        align-items:flex-start;
+        align-items:flex-start; /* Alineado arriba para empezar el contenido */
         justify-content:center;
-        padding:40px 20px;
+        padding:20px 20px; /* Reducido el padding vertical */
+        overflow: hidden; /* Evita el scroll del body */
     }
     .wrap{
         width:100%;
-        max-width:1400px; /* Aumentado a 1400px */
+        max-width:1400px;
         display:grid;
         grid-template-columns:1fr 1fr;
-        gap:28px; /* Aumentado el espacio entre columnas */
-        align-items:flex-start;
+        gap:28px;
+        align-items:stretch; /* Asegura que ambas tarjetas se estiren a la misma altura */
+        height: calc(100vh - 40px); /* Ajusta la altura al viewport menos el padding */
     }
     @media (max-width: 900px) {
       .wrap {
         grid-template-columns: 1fr;
+        height: auto; /* Permite scroll en pantallas pequeñas */
+        overflow-y: auto;
+      }
+      body {
+          overflow-y: auto;
       }
     }
     .card{
@@ -50,11 +57,11 @@
         border:1px solid var(--border-color);
         border-radius:12px;
         padding:24px;
-        box-shadow:0 8px 20px rgba(0,0,0,.4); /* Sombra más oscura para dark mode */
+        box-shadow:0 8px 20px rgba(0,0,0,.4);
         display:flex;
         flex-direction:column;
-        gap:16px;
-        min-height: 500px; /* Asegura que ambas tarjetas tengan un alto mínimo */
+        gap:12px; /* Reducido el gap entre elementos de la tarjeta */
+        height: 100%; /* Ocupa el 100% de la altura disponible */
     }
     h1{margin:0;font-size:1.5rem;color:var(--primary-color);}
     .muted{color:var(--text-muted);font-size:.95rem;margin:0}
@@ -62,30 +69,34 @@
         width:100%;
         border-radius:8px;
         border:1px solid var(--border-color);
-        background:var(--bg-code); /* Fondo más oscuro para inputs */
+        background:var(--bg-code);
         color:var(--text-main);
-        padding:12px;
+        padding:10px; /* Reducido el padding para inputs/selects */
         font-size:1rem;
         transition:border-color 0.2s;
     }
-    textarea{height:280px;resize:vertical;}
+    textarea{
+        height:180px; /* Altura del textarea reducida */
+        min-height: 100px; /* Asegura un mínimo */
+        resize:vertical;
+    }
     input:focus, select:focus, textarea:focus{
         border-color:var(--primary-color);
         outline:none;
         box-shadow:0 0 0 2px rgba(129, 140, 248, 0.4); 
     }
-    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} /* Reducido el gap */
     .btn{
         display:inline-flex;
         align-items:center;
         gap:8px;
-        padding:10px 18px;
+        padding:9px 16px; /* Reducido el padding del botón */
         border-radius:8px;
         font-weight:600;
         cursor:pointer;
         transition:all 0.2s ease;
         border:none;
-        font-size:1rem;
+        font-size:.95rem; /* Ligeramente más pequeño */
     }
     .btn-primary{
         background:var(--primary-color);
@@ -112,61 +123,60 @@
         margin:0;
         white-space:pre-wrap;
         word-break:break-word;
-        background:var(--bg-code); /* Fondo de código muy oscuro */
+        background:var(--bg-code);
         border:1px solid var(--border-color);
         border-radius:8px;
-        padding:16px;
-        min-height:280px;
+        padding:14px; /* Reducido el padding del pre */
+        min-height:100px; /* Altura mínima ajustada */
+        flex-grow: 1; /* Permite que el pre ocupe el espacio restante */
         overflow:auto;
         font-family:monospace;
-        font-size:0.95rem;
+        font-size:0.9rem; /* Ligeramente más pequeño */
     }
     .pill{
         display:inline-block;
         border-radius:999px;
-        padding:6px 14px;
+        padding:5px 12px; /* Reducido el padding del pill */
         font-weight:700;
-        font-size:.85rem;
+        font-size:.8rem; /* Ligeramente más pequeño */
         text-transform:uppercase;
         letter-spacing:0.5px;
     }
-    /* Colores ajustados para verse bien sobre fondo oscuro */
     .ok{background:#065f46;border:1px solid #10b981;color:var(--ok-color)}
     .warn{background:#78350f;border:1px solid #f59e0b;color:var(--warn-color)}
     .bad{background:#7f1d1d;border:1px solid #ef4444;color:var(--bad-color)}
     
     .grid{
         display:grid;
-        grid-template-columns:1fr; /* Cambiado a una sola columna */
-        gap:12px;
+        grid-template-columns:1fr;
+        gap:10px; /* Reducido el gap */
     }
-    .field{display:flex;flex-direction:column;gap:6px;}
-    .small{font-size:.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;}
-    .hr{height:1px;background:var(--border-color);margin:20px 0;}
-    .alerts{display:flex;flex-wrap:wrap;gap:8px;}
+    .field{display:flex;flex-direction:column;gap:5px;} /* Reducido el gap */
+    .small{font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;} /* Ligeramente más pequeño */
+    .hr{height:1px;background:var(--border-color);margin:15px 0;} /* Reducido el margin */
+    .alerts{display:flex;flex-wrap:wrap;gap:6px;} /* Reducido el gap */
     .chip{
-        border-radius:6px; /* Ligeramente menos redondeado */
-        padding:6px 12px;
-        font-size:.8rem;
+        border-radius:6px;
+        padding:5px 10px; /* Reducido el padding del chip */
+        font-size:.75rem; /* Ligeramente más pequeño */
         font-weight:600;
         border:1px solid transparent;
-        background:var(--bg-code); /* Fondo más claro para chips en dark mode */
+        background:var(--bg-code);
         color:var(--text-main);
     }
     .chip.bad{background:var(--bad-color);border-color:var(--bad-color);color:var(--bg-card)}
     .chip.warn{background:var(--warn-color);border-color:var(--warn-color);color:var(--bg-main)}
     .chip.ok{background:var(--ok-color);border-color:var(--ok-color);color:var(--bg-card)}
 
-
-    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-    .controls .field input{height:44px;}
-    .sel{min-width:280px;padding:12px;height:44px;}
+    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;} /* Reducido el gap */
+    .controls .field input{height:38px;} /* Reducido el height del input */
+    .sel{min-width:280px;padding:10px;height:38px;} /* Reducido el padding y height */
 
     .details-row {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin: 6px 0 10px 0;
+      gap: 12px; /* Reducido el gap */
+      margin: 5px 0 8px 0; /* Ajustado el margin */
     }
   </style>
 </head>
@@ -217,6 +227,15 @@ Domicilio: ...
       <p class="small">⚠️ AVISOS DE VALIDACIÓN:</p>
       <div id="alerts" class="alerts"></div>
       
+      <p class="small">📋 DATOS FINALES PARA LA HOJA:</p>
+      <pre id="prettyOut"></pre>
+      <pre id="jsonOut" style="display:none">{}</pre>
+
+      <div class="hr"></div>
+      <div class="details-row">
+        <span id="badge" class="pill warn">Esperando…</span>
+        <span id="summary" class="muted">—</span>
+      </div>
       <div class="grid">
         <div class="field">
           <label class="small">Provincia / Localidad / CP</label>
@@ -227,16 +246,6 @@ Domicilio: ...
           <input id="sugs" readonly />
         </div>
       </div>
-      
-      <div class="hr"></div>
-      <div class="details-row">
-        <span id="badge" class="pill warn">Esperando…</span>
-        <span id="summary" class="muted">—</span>
-      </div>
-
-      <p class="small">📋 DATOS FINALES PARA LA HOJA:</p>
-      <pre id="prettyOut"></pre>
-      <pre id="jsonOut" style="display:none">{}</pre>
 
       <div style="display:none">
         <input id="EP_PROCESS" />
@@ -633,86 +642,4 @@ Domicilio: ...
           data.forEach(p => {
             const numero = p.numero_pedido || '';
             const numCorto = numero ? numero.replace(/^0+/, '') : '';
-            const lineas = Array.isArray(p.observaciones_lineas) ? p.observaciones_lineas : [];
-
-            const nombreLinea = lineas.find(l => {
-              if (!l) return false;
-              const t = l.trim();
-              if (!t) return false;
-              const upper = t.toUpperCase();
-              if (upper === 'OBSERVACIONES') return false;
-              const pref = ['DNI:','DOMICILIO:','CIUDAD:','PROVINCIA:','TEL:','TELEFONO:','E-MAIL:','CODIGO POSTAL:','REFERENCIA','REFERENCIAS'];
-              if (pref.some(pfx => upper.startsWith(pfx))) return false;
-              return true;
-            }) || '';
-
-            const nombre = (p.nombre_responsable || nombreLinea || '').trim() || 'sin nombre';
-
-            const label = numCorto
-              ? `${numCorto} - ${nombre}`
-              : nombre;
-
-            const opt = document.createElement('option');
-            opt.value = numero;
-            opt.textContent = label;
-            pedidoSelect.appendChild(opt);
-          });
-        }
-
-        setStatus('OK', `Se cargaron ${data.length} pedidos de Cover`);
-      }catch(err){
-        console.error('[Andreani Front] loadPedidosCover error:', err);
-        setStatus('REVISAR', 'No se pudieron cargar pedidos de Cover: ' + err.message);
-      }
-    }
-
-    function onPedidoChange(){
-      if (!pedidoSelect) return;
-      const id = pedidoSelect.value;
-      if (!id) return;
-      const pedido = coverPedidos.find(p => (p.numero_pedido || '') === id);
-      if (!pedido) return;
-
-      const lineas = Array.isArray(pedido.observaciones_lineas)
-        ? pedido.observaciones_lineas
-        : (pedido.observaciones_raw ? String(pedido.observaciones_raw).split(/\r?\n/) : []);
-
-      const rawEl = $("raw");
-      if (rawEl){
-        rawEl.value = lineas.join('\n');
-        rawEl.scrollTop = 0;
-      }
-      setStatus('OK', `Pedido ${id} copiado al cuadro de texto`);
-    }
-
-    // Eventos
-    if (btnProcess) btnProcess.addEventListener('click', onProcess);
-    if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
-    if (btnDownload) btnDownload.addEventListener('click', onDownload);
-    if (btnLoadCover) btnLoadCover.addEventListener('click', loadPedidosCover);
-    if (pedidoSelect) pedidoSelect.addEventListener('change', onPedidoChange);
-
-    // Actualizar al cambiar peso/alto/ancho/valor
-    ['peso_grs','alto_cm','ancho_cm','valor_declarado'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('input', () => {
-        try{
-          const current = JSON.parse(jsonOut?.textContent || '{}');
-          readControlsInto(current);
-          const withDefaults = applyDefaults(current);
-          if (jsonOut) jsonOut.textContent = JSON.stringify(withDefaults);
-          if (prettyOut) prettyOut.textContent = buildPretty(withDefaults);
-          const miss = getMissing(withDefaults);
-          const warns = getWarnings(withDefaults);
-          renderAlerts(miss, warns);
-          if (btnConfirm) btnConfirm.disabled = miss.length > 0;
-        }catch(e){}
-      });
-    });
-
-    console.log('[Andreani Front] wired');
-  });
-  </script>
-</body>
-</html>
+            const lineas = Array.isArray
