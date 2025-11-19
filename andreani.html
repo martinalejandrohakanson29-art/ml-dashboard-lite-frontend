@@ -6,17 +6,19 @@
   <title>🚀 n8n Andreani Envío Express</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* VARIABLES DE DARK MODE */
     :root{
-        --primary-color: #6366f1; /* Indigo 500 */
-        --primary-hover: #4f46e5; /* Indigo 600 */
-        --bg-main: #f9fafb; /* Gray 50 */
-        --bg-card: #ffffff;
-        --border-color: #e5e7eb; /* Gray 200 */
-        --text-main: #1f2937; /* Gray 800 */
-        --text-muted: #6b7280; /* Gray 500 */
-        --ok-color: #10b981; /* Green */
-        --warn-color: #f59e0b; /* Amber */
-        --bad-color: #ef4444; /* Red */
+        --primary-color: #818cf8; /* Indigo 400 */
+        --primary-hover: #6366f1; /* Indigo 500 */
+        --bg-main: #0f172a; /* Slate 900 (Fondo Principal) */
+        --bg-card: #1e293b; /* Slate 800 (Fondo de Tarjetas) */
+        --border-color: #334155; /* Slate 700 (Bordes) */
+        --text-main: #f8fafc; /* Slate 50 (Texto Principal) */
+        --text-muted: #94a3b8; /* Slate 400 (Texto Secundario) */
+        --ok-color: #34d399; /* Emerald 400 */
+        --warn-color: #fcd34d; /* Amber 300 */
+        --bad-color: #f87171; /* Red 400 */
+        --bg-code: #020617; /* Slate 950 (Fondo de Pre/Textarea) */
     }
     *{box-sizing:border-box}
     body{
@@ -32,10 +34,10 @@
     }
     .wrap{
         width:100%;
-        max-width:1200px;
+        max-width:1400px; /* Aumentado a 1400px */
         display:grid;
         grid-template-columns:1fr 1fr;
-        gap:24px;
+        gap:28px; /* Aumentado el espacio entre columnas */
         align-items:flex-start;
     }
     @media (max-width: 900px) {
@@ -48,18 +50,19 @@
         border:1px solid var(--border-color);
         border-radius:12px;
         padding:24px;
-        box-shadow:0 4px 12px rgba(0,0,0,.05);
+        box-shadow:0 8px 20px rgba(0,0,0,.4); /* Sombra más oscura para dark mode */
         display:flex;
         flex-direction:column;
         gap:16px;
+        min-height: 500px; /* Asegura que ambas tarjetas tengan un alto mínimo */
     }
-    h1{margin:0;font-size:1.5rem;color:var(--primary-hover);}
+    h1{margin:0;font-size:1.5rem;color:var(--primary-color);}
     .muted{color:var(--text-muted);font-size:.95rem;margin:0}
     textarea, input, select{
         width:100%;
         border-radius:8px;
         border:1px solid var(--border-color);
-        background:var(--bg-card);
+        background:var(--bg-code); /* Fondo más oscuro para inputs */
         color:var(--text-main);
         padding:12px;
         font-size:1rem;
@@ -69,7 +72,7 @@
     input:focus, select:focus, textarea:focus{
         border-color:var(--primary-color);
         outline:none;
-        box-shadow:0 0 0 2px rgba(99, 102, 241, 0.2); /* Indigo 500 with opacity */
+        box-shadow:0 0 0 2px rgba(129, 140, 248, 0.4); 
     }
     .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
     .btn{
@@ -86,22 +89,22 @@
     }
     .btn-primary{
         background:var(--primary-color);
-        color:white;
+        color:var(--bg-main);
     }
     .btn-primary:hover:not(:disabled){
         background:var(--primary-hover);
         transform:translateY(-1px);
-        box-shadow:0 6px 12px rgba(99, 102, 241, 0.3);
+        box-shadow:0 6px 12px rgba(129, 140, 248, 0.3);
     }
     .btn-secondary{
         background:var(--border-color);
         color:var(--text-main);
     }
     .btn-secondary:hover:not(:disabled){
-        background:#d1d5db; /* Gray 300 */
+        background:#475569; /* Slate 600 */
     }
     .btn:disabled{
-        opacity:0.6;
+        opacity:0.5;
         cursor:not-allowed;
     }
 
@@ -109,7 +112,7 @@
         margin:0;
         white-space:pre-wrap;
         word-break:break-word;
-        background:#f3f4f6; /* Gray 100 */
+        background:var(--bg-code); /* Fondo de código muy oscuro */
         border:1px solid var(--border-color);
         border-radius:8px;
         padding:16px;
@@ -127,45 +130,38 @@
         text-transform:uppercase;
         letter-spacing:0.5px;
     }
-    .ok{background:#d1fae5;border:1px solid #a7f3d0;color:var(--ok-color)}
-    .warn{background:#fef3c7;border:1px solid #fde68a;color:var(--warn-color)}
-    .bad{background:#fee2e2;border:1px solid #fecaca;color:var(--bad-color)}
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+    /* Colores ajustados para verse bien sobre fondo oscuro */
+    .ok{background:#065f46;border:1px solid #10b981;color:var(--ok-color)}
+    .warn{background:#78350f;border:1px solid #f59e0b;color:var(--warn-color)}
+    .bad{background:#7f1d1d;border:1px solid #ef4444;color:var(--bad-color)}
+    
+    .grid{
+        display:grid;
+        grid-template-columns:1fr; /* Cambiado a una sola columna */
+        gap:12px;
+    }
     .field{display:flex;flex-direction:column;gap:6px;}
     .small{font-size:.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;}
     .hr{height:1px;background:var(--border-color);margin:20px 0;}
     .alerts{display:flex;flex-wrap:wrap;gap:8px;}
     .chip{
-        border-radius:999px;
+        border-radius:6px; /* Ligeramente menos redondeado */
         padding:6px 12px;
         font-size:.8rem;
         font-weight:600;
         border:1px solid transparent;
+        background:var(--bg-code); /* Fondo más claro para chips en dark mode */
+        color:var(--text-main);
     }
-    .chip.bad{background:var(--bad-color);border-color:var(--bad-color);color:white}
-    .chip.warn{background:var(--warn-color);border-color:var(--warn-color);color:white}
-    .chip.ok{background:var(--ok-color);border-color:var(--ok-color);color:white}
+    .chip.bad{background:var(--bad-color);border-color:var(--bad-color);color:var(--bg-card)}
+    .chip.warn{background:var(--warn-color);border-color:var(--warn-color);color:var(--bg-main)}
+    .chip.ok{background:var(--ok-color);border-color:var(--ok-color);color:var(--bg-card)}
+
 
     .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
     .controls .field input{height:44px;}
-    /* select de pedidos */
     .sel{min-width:280px;padding:12px;height:44px;}
 
-    /* Nuevo estilo para la sección de Endpoints */
-    .endpoints-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 12px;
-    }
-    .endpoints-grid input {
-      font-size: 0.9rem;
-      padding: 8px;
-    }
-    .endpoints-grid label {
-      font-weight: 400;
-    }
-
-    /* Estilo para los detalles finales */
     .details-row {
       display: flex;
       align-items: center;
@@ -177,7 +173,7 @@
 <body>
   <main class="wrap">
     <section class="card">
-      <h1>📦 Entrada de Pedido</h1>
+      <h1><span style="color:var(--warn-color)">📦</span> Entrada de Pedido</h1>
       <p class="muted">1. Carga o pega el texto del cliente. Luego, **Procesar con IA**.</p>
 
       <div class="row" style="margin-bottom:8px">
@@ -203,34 +199,10 @@ Domicilio: ...
       <div class="hr"></div>
       <p class="small">✅ PEDIDOS AGREGADOS EN ESTA SESIÓN:</p>
       <div id="addedList" class="alerts"></div>
-      <div class="hr"></div>
-      <p class="small">⚙️ CONFIGURACIÓN DE ENDPOINTS (N8N):</p>
-      <div class="endpoints-grid">
-        <div class="field">
-          <label class="small">Proceso (POST)</label>
-          <input id="EP_PROCESS" placeholder="https://tu-n8n/webhook/andreani/process" />
-        </div>
-        <div class="field">
-          <label class="small">Confirmación (POST)</label>
-          <input id="EP_APPEND" placeholder="https://tu-n8n/webhook/andreani/append" />
-        </div>
-        <div class="field">
-          <label class="small">Descarga XLSX (GET)</label>
-          <input id="EP_DOWNLOAD" placeholder="https://tu-n8n/webhook/andreani/download" />
-        </div>
-        <div class="field">
-          <label class="small">Limpieza "Carga" (POST)</label>
-          <input id="EP_CLEAR" placeholder="https://tu-n8n/webhook/andreani/clear" />
-        </div>
-        <div class="field">
-          <label class="small">Pedidos Cover (GET)</label>
-          <input id="EP_COVER" placeholder="https://tu-n8n/webhook/cover-pedidos-pendientes" />
-        </div>
-      </div>
-    </section>
+      </section>
 
     <section class="card">
-      <h1>✨ Previsualización y Validación</h1>
+      <h1><span style="color:var(--ok-color)">✨</span> Previsualización y Validación</h1>
       <p class="muted">2. Revisa los datos, corrige lo necesario y Confirma.</p>
 
       <p class="small">📦 DIMENSIONES Y VALOR POR DEFECTO:</p>
@@ -245,15 +217,6 @@ Domicilio: ...
       <p class="small">⚠️ AVISOS DE VALIDACIÓN:</p>
       <div id="alerts" class="alerts"></div>
       
-      <p class="small">📋 DATOS FINALES PARA LA HOJA:</p>
-      <pre id="prettyOut"></pre>
-      <pre id="jsonOut" style="display:none">{}</pre>
-
-      <div class="hr"></div>
-      <div class="details-row">
-        <span id="badge" class="pill warn">Esperando…</span>
-        <span id="summary" class="muted">—</span>
-      </div>
       <div class="grid">
         <div class="field">
           <label class="small">Provincia / Localidad / CP</label>
@@ -264,13 +227,31 @@ Domicilio: ...
           <input id="sugs" readonly />
         </div>
       </div>
+      
+      <div class="hr"></div>
+      <div class="details-row">
+        <span id="badge" class="pill warn">Esperando…</span>
+        <span id="summary" class="muted">—</span>
+      </div>
+
+      <p class="small">📋 DATOS FINALES PARA LA HOJA:</p>
+      <pre id="prettyOut"></pre>
+      <pre id="jsonOut" style="display:none">{}</pre>
+
+      <div style="display:none">
+        <input id="EP_PROCESS" />
+        <input id="EP_APPEND" />
+        <input id="EP_DOWNLOAD" />
+        <input id="EP_CLEAR" />
+        <input id="EP_COVER" />
+      </div>
+
     </section>
   </main>
 
   <script>
   window.addEventListener('DOMContentLoaded', () => {
-    // Código JavaScript exactamente igual al que ya tenías, pegado a continuación.
-    // **No lo modifico** para asegurar que la lógica de n8n funcione perfecto.
+    // El código JavaScript es el mismo que tenías, **no se modifica** la lógica de los endpoints ni las funciones.
 
     console.log('[Andreani Front] init');
 
@@ -279,7 +260,7 @@ Domicilio: ...
     const safeText = (el, v) => { if (el) el.textContent = v; };
     const safeVal  = (el, v) => { if (el) el.value = v; };
 
-    // ===== ENDPOINTS por defecto =====
+    // ===== ENDPOINTS por defecto (NO VISIBLES, PERO NECESARIOS PARA EL JS) =====
     const EP_DEFAULTS = {
       EP_PROCESS:  'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/process',
       EP_APPEND:   'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/append',
@@ -289,9 +270,11 @@ Domicilio: ...
     };
     const getEP = (id) => {
       const val = $(id)?.value?.trim();
+      // Ya que no son editables, usamos siempre el default si el input está vacío o no existe
       return val || EP_DEFAULTS[id];
     };
 
+    // Inicializar los inputs ocultos
     ['EP_PROCESS','EP_APPEND','EP_DOWNLOAD','EP_CLEAR','EP_COVER'].forEach(id=>{
       const el = $(id);
       if (el && !el.value) safeVal(el, EP_DEFAULTS[id]);
@@ -315,7 +298,7 @@ Domicilio: ...
     let coverPedidos = [];
     let addedItems = []; // NUEVO: pedidos agregados en esta sesión
 
-    // ===== helpers estado =====
+    // ===== helpers estado (sin cambios en la lógica) =====
     function setStatus(state, text){
       if (badge) badge.className = 'pill ' + (state==='OK' ? 'ok' : state==='CORREGIDO' ? 'warn' : state==='REVISAR' ? 'bad' : 'warn');
       safeText(badge, state || '—');
@@ -328,14 +311,11 @@ Domicilio: ...
       return `${prov} / ${loc} / ${cp}`;
     }
 
-    // NUEVO: obtener etiqueta legible del pedido actual
     function getCurrentPedidoLabel(){
-      // Si viene de Cover, usamos la opción seleccionada
       if (pedidoSelect && pedidoSelect.value){
         const opt = pedidoSelect.options[pedidoSelect.selectedIndex];
         if (opt && opt.textContent) return opt.textContent.trim();
       }
-      // Si no, usamos la primera línea no vacía del texto crudo
       const rawEl = $("raw");
       if (rawEl && rawEl.value){
         const line = rawEl.value.split(/\r?\n/).find(l => l.trim());
@@ -344,7 +324,6 @@ Domicilio: ...
       return 'Pedido manual';
     }
 
-    // NUEVO: renderizar lista de pedidos agregados
     function renderAddedList(){
       if (!addedList) return;
       addedList.innerHTML = '';
@@ -355,9 +334,7 @@ Domicilio: ...
         addedList.appendChild(s);
       });
     }
-    // FIN NUEVO helpers
 
-    // Formatea DNI con puntos
     function formatDni(dni){
       const digits = String(dni || '').replace(/\D/g, '');
       if (digits.length === 8){
@@ -369,7 +346,6 @@ Domicilio: ...
       return digits;
     }
 
-    // Extraer "Referencia de casa" de referencias
     function extractReferencia(ref){
       if (!ref) return '';
       let txt = String(ref);
@@ -381,7 +357,6 @@ Domicilio: ...
       return txt;
     }
 
-    // Construye el texto limpio para la hoja
     function buildPretty(d){
       if (!d || typeof d !== 'object') return '';
 
@@ -428,7 +403,6 @@ Domicilio: ...
       return lines.join('\n');
     }
 
-    // whitelist → payload final
     function toFinalPayload(d){
       const keep = [
         'peso_grs','alto_cm','ancho_cm','profundidad_cm','valor_declarado',
@@ -447,7 +421,6 @@ Domicilio: ...
       return out;
     }
 
-    // Defaults
     const DEFAULTS = { peso_grs: 500, alto_cm: 10, ancho_cm: 10, valor_declarado: 100000 };
     function applyDefaults(finalD){
       for (const k of Object.keys(DEFAULTS)){
@@ -582,13 +555,11 @@ Domicilio: ...
         const rawEl = $("raw");
         if (rawEl) rawEl.value = '';
 
-        // NUEVO: marcar este pedido como agregado
         const label = getCurrentPedidoLabel();
         if (label){
           if (!addedItems.includes(label)) addedItems.push(label);
           renderAddedList();
         }
-        // FIN NUEVO
 
       }catch(err){
         console.error('[Andreani Front] onConfirm error:', err);
@@ -596,7 +567,6 @@ Domicilio: ...
       }
     }
 
-    // === Descarga + Clear ===
     function onDownload(){
       try {
         const epDownload = getEP('EP_DOWNLOAD');
@@ -618,10 +588,8 @@ Domicilio: ...
             const res = await fetch(epClear, { method: 'POST', keepalive: true });
             if (!res.ok) throw new Error(`Clear falló (${res.status})`);
 
-            // NUEVO: limpiar la lista de pedidos agregados cuando se descarga el XLSX
             addedItems = [];
             renderAddedList();
-            // FIN NUEVO
 
             alert('Listo: descarga iniciada y la hoja “Carga” quedó vacía.');
           } catch (e) {
@@ -645,7 +613,6 @@ Domicilio: ...
       }
     }
 
-    // === Traer pedidos desde Cover ===
     async function loadPedidosCover(){
       try{
         setStatus('…','Cargando pedidos de Cover');
