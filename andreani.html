@@ -57,7 +57,7 @@
         border:1px solid var(--border-color);
         border-radius:12px;
         padding:24px;
-        box-shadow:0 8px 20px rgba(0,0,0,.4);
+        box-shadow:0 8px 20px rgba(0,0,0,.4); /* Sombra más oscura para dark mode */
         display:flex;
         flex-direction:column;
         gap:12px; /* Reducido el gap entre elementos de la tarjeta */
@@ -69,7 +69,7 @@
         width:100%;
         border-radius:8px;
         border:1px solid var(--border-color);
-        background:var(--bg-code);
+        background:var(--bg-code); /* Fondo más oscuro para inputs */
         color:var(--text-main);
         padding:10px; /* Reducido el padding para inputs/selects */
         font-size:1rem;
@@ -123,7 +123,7 @@
         margin:0;
         white-space:pre-wrap;
         word-break:break-word;
-        background:var(--bg-code);
+        background:var(--bg-code); /* Fondo de código muy oscuro */
         border:1px solid var(--border-color);
         border-radius:8px;
         padding:14px; /* Reducido el padding del pre */
@@ -142,6 +142,7 @@
         text-transform:uppercase;
         letter-spacing:0.5px;
     }
+    /* Colores ajustados para verse bien sobre fondo oscuro */
     .ok{background:#065f46;border:1px solid #10b981;color:var(--ok-color)}
     .warn{background:#78350f;border:1px solid #f59e0b;color:var(--warn-color)}
     .bad{background:#7f1d1d;border:1px solid #ef4444;color:var(--bad-color)}
@@ -260,8 +261,6 @@ Domicilio: ...
 
   <script>
   window.addEventListener('DOMContentLoaded', () => {
-    // El código JavaScript es el mismo que tenías, **no se modifica** la lógica de los endpoints ni las funciones.
-
     console.log('[Andreani Front] init');
 
     // ===== util =====
@@ -269,7 +268,7 @@ Domicilio: ...
     const safeText = (el, v) => { if (el) el.textContent = v; };
     const safeVal  = (el, v) => { if (el) el.value = v; };
 
-    // ===== ENDPOINTS por defecto (NO VISIBLES, PERO NECESARIOS PARA EL JS) =====
+    // ===== ENDPOINTS por defecto (configurados para los inputs ocultos) =====
     const EP_DEFAULTS = {
       EP_PROCESS:  'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/process',
       EP_APPEND:   'https://n8n-on-render-production-52f0.up.railway.app/webhook/andreani/append',
@@ -279,11 +278,10 @@ Domicilio: ...
     };
     const getEP = (id) => {
       const val = $(id)?.value?.trim();
-      // Ya que no son editables, usamos siempre el default si el input está vacío o no existe
       return val || EP_DEFAULTS[id];
     };
 
-    // Inicializar los inputs ocultos
+    // Inicializar los inputs ocultos con los valores por defecto
     ['EP_PROCESS','EP_APPEND','EP_DOWNLOAD','EP_CLEAR','EP_COVER'].forEach(id=>{
       const el = $(id);
       if (el && !el.value) safeVal(el, EP_DEFAULTS[id]);
@@ -320,6 +318,7 @@ Domicilio: ...
       return `${prov} / ${loc} / ${cp}`;
     }
 
+    // OBTENER ETIQUETA
     function getCurrentPedidoLabel(){
       if (pedidoSelect && pedidoSelect.value){
         const opt = pedidoSelect.options[pedidoSelect.selectedIndex];
@@ -333,6 +332,7 @@ Domicilio: ...
       return 'Pedido manual';
     }
 
+    // RENDERIZAR LISTA AGREGADA
     function renderAddedList(){
       if (!addedList) return;
       addedList.innerHTML = '';
@@ -344,6 +344,7 @@ Domicilio: ...
       });
     }
 
+    // FORMATO DNI
     function formatDni(dni){
       const digits = String(dni || '').replace(/\D/g, '');
       if (digits.length === 8){
@@ -355,6 +356,7 @@ Domicilio: ...
       return digits;
     }
 
+    // EXTRAER REFERENCIA
     function extractReferencia(ref){
       if (!ref) return '';
       let txt = String(ref);
@@ -366,6 +368,7 @@ Domicilio: ...
       return txt;
     }
 
+    // CONSTRUYE TEXTO FINAL (Pretty)
     function buildPretty(d){
       if (!d || typeof d !== 'object') return '';
 
@@ -412,6 +415,7 @@ Domicilio: ...
       return lines.join('\n');
     }
 
+    // WHITELIST A PAYLOAD FINAL
     function toFinalPayload(d){
       const keep = [
         'peso_grs','alto_cm','ancho_cm','profundidad_cm','valor_declarado',
@@ -430,6 +434,7 @@ Domicilio: ...
       return out;
     }
 
+    // DEFAULTS
     const DEFAULTS = { peso_grs: 500, alto_cm: 10, ancho_cm: 10, valor_declarado: 100000 };
     function applyDefaults(finalD){
       for (const k of Object.keys(DEFAULTS)){
@@ -441,6 +446,7 @@ Domicilio: ...
       return finalD;
     }
 
+    // ESCRIBIR CONTROLES (PESO/ALTO/ANCHO/VALOR)
     function writeControls(finalD){
       const setNum = (id, val) => { const el = document.getElementById(id); if (el) el.value = (val ?? ''); };
       setNum('peso_grs', finalD.peso_grs ?? '');
@@ -449,6 +455,7 @@ Domicilio: ...
       setNum('valor_declarado', finalD.valor_declarado ?? '');
     }
 
+    // LEER CONTROLES
     function readControlsInto(finalD){
       const readNum = (id) => { const el = document.getElementById(id); if (!el) return undefined; const n = Number(el.value); return Number.isFinite(n) && n>0 ? n : undefined; };
       const p = readNum('peso_grs'); if (p !== undefined) finalD.peso_grs = p;
@@ -458,6 +465,7 @@ Domicilio: ...
       return finalD;
     }
 
+    // OBTENER FALTANTES
     function getMissing(finalD){
       const miss = [];
       const has = (v) => v !== undefined && v !== null && String(v).trim() !== '';
@@ -474,6 +482,8 @@ Domicilio: ...
       if (!has(finalD.numero)) miss.push('Falta altura de calle');
       return miss;
     }
+    
+    // OBTENER ADVERTENCIAS
     function getWarnings(finalD){
       const warns = [];
       const numero = String(finalD.numero ?? '').trim();
@@ -481,6 +491,7 @@ Domicilio: ...
       return warns;
     }
 
+    // RENDERIZAR ALERTAS
     function renderAlerts(miss, warns){
       if (!alerts) return;
       alerts.innerHTML = '';
@@ -500,6 +511,7 @@ Domicilio: ...
       }catch(e){}
     }
 
+    // LLAMADA AJAX A N8N (POST)
     async function callJSON(url, body){
       const res = await fetch(url, {
         method: 'POST',
@@ -514,6 +526,9 @@ Domicilio: ...
       try { return JSON.parse(text); } catch(e){ throw new Error(`JSON inválido: ${text?.slice(0,400)}`); }
     }
 
+    // ===================================
+    // FUNCIÓN PRINCIPAL: PROCESAR CON IA
+    // ===================================
     async function onProcess(){
       try{
         setStatus('…','Procesando');
@@ -554,6 +569,9 @@ Domicilio: ...
       }
     }
 
+    // ===================================
+    // FUNCIÓN: CONFIRMAR Y AGREGAR
+    // ===================================
     async function onConfirm(){
       try{
         const ep = getEP('EP_APPEND');
@@ -576,6 +594,9 @@ Domicilio: ...
       }
     }
 
+    // ===================================
+    // FUNCIÓN: DESCARGA + CLEAR
+    // ===================================
     function onDownload(){
       try {
         const epDownload = getEP('EP_DOWNLOAD');
@@ -622,6 +643,9 @@ Domicilio: ...
       }
     }
 
+    // ===================================
+    // FUNCIÓN: CARGAR PEDIDOS COVER
+    // ===================================
     async function loadPedidosCover(){
       try{
         setStatus('…','Cargando pedidos de Cover');
@@ -642,4 +666,91 @@ Domicilio: ...
           data.forEach(p => {
             const numero = p.numero_pedido || '';
             const numCorto = numero ? numero.replace(/^0+/, '') : '';
-            const lineas = Array.isArray
+            const lineas = Array.isArray(p.observaciones_lineas) ? p.observaciones_lineas : [];
+
+            const nombreLinea = lineas.find(l => {
+              if (!l) return false;
+              const t = l.trim();
+              if (!t) return false;
+              const upper = t.toUpperCase();
+              if (upper === 'OBSERVACIONES') return false;
+              const pref = ['DNI:','DOMICILIO:','CIUDAD:','PROVINCIA:','TEL:','TELEFONO:','E-MAIL:','CODIGO POSTAL:','REFERENCIA','REFERENCIAS'];
+              if (pref.some(pfx => upper.startsWith(pfx))) return false;
+              return true;
+            }) || '';
+
+            const nombre = (p.nombre_responsable || nombreLinea || '').trim() || 'sin nombre';
+
+            const label = numCorto
+              ? `${numCorto} - ${nombre}`
+              : nombre;
+
+            const opt = document.createElement('option');
+            opt.value = numero;
+            opt.textContent = label;
+            pedidoSelect.appendChild(opt);
+          });
+        }
+
+        setStatus('OK', `Se cargaron ${data.length} pedidos de Cover`);
+      }catch(err){
+        console.error('[Andreani Front] loadPedidosCover error:', err);
+        setStatus('REVISAR', 'No se pudieron cargar pedidos de Cover: ' + err.message);
+      }
+    }
+
+    // ===================================
+    // FUNCIÓN: CAMBIO EN SELECT DE PEDIDOS
+    // ===================================
+    function onPedidoChange(){
+      if (!pedidoSelect) return;
+      const id = pedidoSelect.value;
+      if (!id) return;
+      const pedido = coverPedidos.find(p => (p.numero_pedido || '') === id);
+      if (!pedido) return;
+
+      const lineas = Array.isArray(pedido.observaciones_lineas)
+        ? pedido.observaciones_lineas
+        : (pedido.observaciones_raw ? String(pedido.observaciones_raw).split(/\r?\n/) : []);
+
+      const rawEl = $("raw");
+      if (rawEl){
+        rawEl.value = lineas.join('\n');
+        rawEl.scrollTop = 0;
+      }
+      setStatus('OK', `Pedido ${id} copiado al cuadro de texto`);
+    }
+
+    // ===================================
+    // EVENTOS
+    // ===================================
+    if (btnProcess) btnProcess.addEventListener('click', onProcess);
+    if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
+    if (btnDownload) btnDownload.addEventListener('click', onDownload);
+    if (btnLoadCover) btnLoadCover.addEventListener('click', loadPedidosCover);
+    if (pedidoSelect) pedidoSelect.addEventListener('change', onPedidoChange);
+
+    // Actualizar al cambiar peso/alto/ancho/valor
+    ['peso_grs','alto_cm','ancho_cm','valor_declarado'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        try{
+          const current = JSON.parse(jsonOut?.textContent || '{}');
+          readControlsInto(current);
+          const withDefaults = applyDefaults(current);
+          if (jsonOut) jsonOut.textContent = JSON.stringify(withDefaults);
+          if (prettyOut) prettyOut.textContent = buildPretty(withDefaults);
+          const miss = getMissing(withDefaults);
+          const warns = getWarnings(withDefaults);
+          renderAlerts(miss, warns);
+          if (btnConfirm) btnConfirm.disabled = miss.length > 0;
+        }catch(e){}
+      });
+    });
+
+    console.log('[Andreani Front] wired');
+  });
+  </script>
+</body>
+</html>
