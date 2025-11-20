@@ -4,108 +4,143 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🚀 n8n Andreani Envío Express</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* VARIABLES DE DARK MODE */
+    /* ---------------------------------
+    VARIABLES DE DISEÑO - ESTÉTICA RENOVADA
+    --------------------------------- */
     :root{
-        --primary-color: #818cf8; /* Indigo 400 */
-        --primary-hover: #6366f1; /* Indigo 500 */
+        /* Colores más vivos y modernos */
+        --primary-color: #5eead4; /* Cyan 300 - Botones/Éxito */
+        --primary-hover: #2dd4bf; /* Cyan 400 */
+        --accent-color: #a78bfa; /* Violet 400 - Títulos/Foco */
         --bg-main: #0f172a; /* Slate 900 (Fondo Principal) */
         --bg-card: #1e293b; /* Slate 800 (Fondo de Tarjetas) */
         --border-color: #334155; /* Slate 700 (Bordes) */
         --text-main: #f8fafc; /* Slate 50 (Texto Principal) */
         --text-muted: #94a3b8; /* Slate 400 (Texto Secundario) */
-        --ok-color: #34d399; /* Emerald 400 */
-        --warn-color: #fcd34d; /* Amber 300 */
-        --bad-color: #f87171; /* Red 400 */
-        --bg-code: #020617; /* Slate 950 (Fondo de Pre/Textarea) */
+        --ok-color: #34d399; /* Emerald 400 (Original, va bien) */
+        --warn-color: #fbbf24; /* Amber 400 (Más intenso) */
+        --bad-color: #f87171; /* Red 400 (Original, va bien) */
+        --bg-code: #020617; /* Slate 950 (Fondo de Pre/Textarea/Input) */
+        --shadow-elevation: 0 10px 30px rgba(0,0,0,0.5); /* Sombra más grande */
     }
+    
+    /* ---------------------------------
+    ESTILOS BASE
+    --------------------------------- */
     *{box-sizing:border-box}
     body{
         margin:0;
-        font-family:'Inter', sans-serif;
+        /* Fuente cambiada a Poppins */
+        font-family:'Poppins', sans-serif;
         background:var(--bg-main);
         color:var(--text-main);
         min-height:100vh;
         display:flex;
-        align-items:flex-start; /* Alineado arriba para empezar el contenido */
+        align-items:flex-start;
         justify-content:center;
-        padding:20px 20px; /* Reducido el padding vertical */
-        overflow: hidden; /* Evita el scroll del body */
+        padding:30px 20px; /* Padding ligeramente mayor */
+        overflow-y: auto; /* Permitir scroll si es necesario */
+        scroll-behavior: smooth;
     }
     .wrap{
         width:100%;
-        max-width:1400px;
+        max-width:1200px; /* Ancho máximo ligeramente menor */
         display:grid;
         grid-template-columns:1fr 1fr;
-        gap:28px;
-        align-items:stretch; /* Asegura que ambas tarjetas se estiren a la misma altura */
-        height: calc(100vh - 40px); /* Ajusta la altura al viewport menos el padding */
+        gap:30px; /* Gap aumentado */
+        align-items:flex-start; /* Alineado arriba */
     }
     @media (max-width: 900px) {
       .wrap {
         grid-template-columns: 1fr;
-        height: auto; /* Permite scroll en pantallas pequeñas */
-        overflow-y: auto;
-      }
-      body {
-          overflow-y: auto;
+        gap: 40px; /* Más espacio en móviles */
       }
     }
+    
+    /* ---------------------------------
+    TARJETAS (CARDS)
+    --------------------------------- */
     .card{
         background:var(--bg-card);
-        border:1px solid var(--border-color);
-        border-radius:12px;
-        padding:24px;
-        box-shadow:0 8px 20px rgba(0,0,0,.4); /* Sombra más oscura para dark mode */
+        border:none; /* Eliminado el borde sólido */
+        border-radius:20px; /* Bordes más redondeados */
+        padding:30px; /* Padding aumentado */
+        box-shadow:var(--shadow-elevation); 
         display:flex;
         flex-direction:column;
-        gap:12px; /* Reducido el gap entre elementos de la tarjeta */
-        height: 100%; /* Ocupa el 100% de la altura disponible */
+        gap:15px; /* Gap aumentado */
+        min-height: 400px; /* Altura mínima para mejor estética */
     }
-    h1{margin:0;font-size:1.5rem;color:var(--primary-color);}
-    .muted{color:var(--text-muted);font-size:.95rem;margin:0}
+    h1{
+        margin:0;
+        font-size:1.8rem; /* Título más grande */
+        color:var(--accent-color); /* Color de acento */
+        font-weight: 800; /* Más peso */
+        letter-spacing: -0.5px;
+    }
+    .muted{color:var(--text-muted);font-size:.9rem;margin:0}
+    
+    /* ---------------------------------
+    INPUTS/TEXTAREAS/SELECTS
+    --------------------------------- */
     textarea, input, select{
         width:100%;
-        border-radius:8px;
+        border-radius:12px; /* Bordes más redondeados */
         border:1px solid var(--border-color);
-        background:var(--bg-code); /* Fondo más oscuro para inputs */
+        background:var(--bg-code);
         color:var(--text-main);
-        padding:10px; /* Reducido el padding para inputs/selects */
+        padding:12px 15px; /* Padding mayor */
         font-size:1rem;
-        transition:border-color 0.2s;
+        transition:border-color 0.3s, box-shadow 0.3s;
     }
+    /* El cambio más importante: Altura del textarea aumentada */
     textarea{
-        height:180px; /* Altura del textarea reducida */
-        min-height: 100px; /* Asegura un mínimo */
+        height:280px; /* ¡Agrandado de 180px a 280px! */
+        min-height: 150px;
         resize:vertical;
     }
     input:focus, select:focus, textarea:focus{
         border-color:var(--primary-color);
         outline:none;
-        box-shadow:0 0 0 2px rgba(129, 140, 248, 0.4); 
+        /* Efecto de 'glow' al hacer focus */
+        box-shadow:0 0 0 3px rgba(94, 234, 212, 0.4); 
     }
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} /* Reducido el gap */
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+    .field{display:flex;flex-direction:column;gap:6px;}
+    .small{
+        font-size:.7rem; /* Más pequeño */
+        color:var(--accent-color); /* Color de acento para etiquetas */
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:1px;
+    }
+
+    /* ---------------------------------
+    BOTONES
+    --------------------------------- */
     .btn{
         display:inline-flex;
         align-items:center;
-        gap:8px;
-        padding:9px 16px; /* Reducido el padding del botón */
-        border-radius:8px;
-        font-weight:600;
+        gap:10px;
+        padding:10px 20px; /* Padding aumentado */
+        border-radius:10px; /* Bordes más redondeados */
+        font-weight:700;
         cursor:pointer;
-        transition:all 0.2s ease;
+        transition:all 0.3s cubic-bezier(.17,.67,.83,.67); /* Animación más suave */
         border:none;
-        font-size:.95rem; /* Ligeramente más pequeño */
+        font-size:1rem;
+        box-shadow:0 4px 10px rgba(0,0,0,0.2);
     }
     .btn-primary{
         background:var(--primary-color);
-        color:var(--bg-main);
+        color:var(--bg-card); /* Color de texto que contrasta */
     }
     .btn-primary:hover:not(:disabled){
         background:var(--primary-hover);
-        transform:translateY(-1px);
-        box-shadow:0 6px 12px rgba(129, 140, 248, 0.3);
+        transform:translateY(-3px); /* Efecto 3D sutil */
+        box-shadow:0 8px 15px rgba(94, 234, 212, 0.4);
     }
     .btn-secondary{
         background:var(--border-color);
@@ -113,81 +148,97 @@
     }
     .btn-secondary:hover:not(:disabled){
         background:#475569; /* Slate 600 */
+        transform:translateY(-1px);
     }
     .btn:disabled{
-        opacity:0.5;
+        opacity:0.4;
         cursor:not-allowed;
+        transform:none;
+        box-shadow:none;
     }
 
+    /* ---------------------------------
+    CÓDIGO / PREVISUALIZACIÓN
+    --------------------------------- */
     pre{
         margin:0;
         white-space:pre-wrap;
         word-break:break-word;
-        background:var(--bg-code); /* Fondo de código muy oscuro */
+        background:var(--bg-code);
         border:1px solid var(--border-color);
-        border-radius:8px;
-        padding:14px; /* Reducido el padding del pre */
-        min-height:100px; /* Altura mínima ajustada */
-        flex-grow: 1; /* Permite que el pre ocupe el espacio restante */
+        border-radius:12px; /* Más redondeado */
+        padding:18px; /* Padding mayor */
+        min-height:120px;
+        flex-grow: 1; 
         overflow:auto;
-        font-family:monospace;
-        font-size:0.9rem; /* Ligeramente más pequeño */
+        font-family:'monospace';
+        font-size:0.95rem; 
+        line-height: 1.5;
     }
+    
+    /* ---------------------------------
+    ESTADOS / PILLS / CHIPS
+    --------------------------------- */
     .pill{
         display:inline-block;
-        border-radius:999px;
-        padding:5px 12px; /* Reducido el padding del pill */
-        font-weight:700;
-        font-size:.8rem; /* Ligeramente más pequeño */
+        border-radius:50px; /* Más redondo */
+        padding:6px 14px;
+        font-weight:800; /* Más peso */
+        font-size:.85rem;
         text-transform:uppercase;
-        letter-spacing:0.5px;
+        letter-spacing:1px;
+        transition: all 0.5s ease; /* Animación para el cambio de estado */
     }
-    /* Colores ajustados para verse bien sobre fondo oscuro */
+    /* Los colores de estado no cambian mucho, solo el fondo */
     .ok{background:#065f46;border:1px solid #10b981;color:var(--ok-color)}
     .warn{background:#78350f;border:1px solid #f59e0b;color:var(--warn-color)}
     .bad{background:#7f1d1d;border:1px solid #ef4444;color:var(--bad-color)}
     
-    .grid{
-        display:grid;
-        grid-template-columns:1fr;
-        gap:10px; /* Reducido el gap */
-    }
-    .field{display:flex;flex-direction:column;gap:5px;} /* Reducido el gap */
-    .small{font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;} /* Ligeramente más pequeño */
-    .hr{height:1px;background:var(--border-color);margin:15px 0;} /* Reducido el margin */
-    .alerts{display:flex;flex-wrap:wrap;gap:6px;} /* Reducido el gap */
+    .alerts{display:flex;flex-wrap:wrap;gap:8px;}
     .chip{
-        border-radius:6px;
-        padding:5px 10px; /* Reducido el padding del chip */
-        font-size:.75rem; /* Ligeramente más pequeño */
-        font-weight:600;
+        border-radius:8px;
+        padding:7px 12px;
+        font-size:.8rem;
+        font-weight:700;
         border:1px solid transparent;
         background:var(--bg-code);
         color:var(--text-main);
+        transition: transform 0.2s;
+    }
+    .chip:hover{
+        transform: scale(1.03); /* Animación sutil al pasar el mouse */
     }
     .chip.bad{background:var(--bad-color);border-color:var(--bad-color);color:var(--bg-card)}
     .chip.warn{background:var(--warn-color);border-color:var(--warn-color);color:var(--bg-main)}
     .chip.ok{background:var(--ok-color);border-color:var(--ok-color);color:var(--bg-card)}
 
-    .controls{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;} /* Reducido el gap */
-    .controls .field input{height:38px;} /* Reducido el height del input */
-    .sel{min-width:280px;padding:10px;height:38px;} /* Reducido el padding y height */
-
+    /* ---------------------------------
+    OTROS AJUSTES DE MAQUETACIÓN
+    --------------------------------- */
+    .grid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:15px;
+    }
+    .hr{height:1px;background:var(--border-color);margin:20px 0;} /* Separador más espaciado */
+    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:15px;}
+    .controls .field input{height:44px;} /* Inputs un poco más altos */
+    .sel{min-width:280px;padding:12px 15px;height:44px;} 
     .details-row {
       display: flex;
       align-items: center;
-      gap: 12px; /* Reducido el gap */
-      margin: 5px 0 8px 0; /* Ajustado el margin */
+      gap: 15px;
+      margin: 10px 0 15px 0;
     }
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="card">
-      <h1><span style="color:var(--warn-color)">📦</span> Entrada de Pedido</h1>
+      <h1><span style="color:var(--accent-color)">📦</span> Entrada de Pedido</h1>
       <p class="muted">1. Carga o pega el texto del cliente. Luego, **Procesar con IA**.</p>
 
-      <div class="row" style="margin-bottom:8px">
+      <div class="row" style="margin-bottom:12px">
         <button class="btn btn-secondary" id="btnLoadCover">📥 Cargar pedidos de Cover</button>
         <select id="pedidoSelect" class="sel">
           <option value="">Elegí un pedido…</option>
@@ -213,7 +264,7 @@ Domicilio: ...
       </section>
 
     <section class="card">
-      <h1><span style="color:var(--ok-color)">✨</span> Previsualización y Validación</h1>
+      <h1><span style="color:var(--primary-color)">✨</span> Previsualización y Validación</h1>
       <p class="muted">2. Revisa los datos, corrige lo necesario y Confirma.</p>
 
       <p class="small">📦 DIMENSIONES Y VALOR POR DEFECTO:</p>
@@ -260,6 +311,10 @@ Domicilio: ...
   </main>
 
   <script>
+  // **********************************
+  // LÓGICA JAVASCRIPT: SIN MODIFICACIONES
+  // Se mantiene el código original del usuario.
+  // **********************************
   window.addEventListener('DOMContentLoaded', () => {
     console.log('[Andreani Front] init');
 
