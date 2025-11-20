@@ -157,8 +157,9 @@
         box-shadow:none;
     }
 
+  
     /* ---------------------------------
-    CÓDIGO / PREVISUALIZACIÓN
+    CÓDIGO / PREVISUALIZACIÓN (MODIFICADO)
     --------------------------------- */
     pre{
         margin:0;
@@ -167,15 +168,15 @@
         background:var(--bg-code);
         border:1px solid var(--border-color);
         border-radius:12px; /* Más redondeado */
-        padding:18px; /* Padding mayor */
-        min-height:120px;
+        padding:15px; /* Reducido de 18px a 15px */
+        min-height:100px; /* Reducido de 120px a 100px para ganar espacio */
+        max-height: 250px; /* <<-- ¡ESTE ES EL CAMBIO CLAVE! Altura máxima forzada */
         flex-grow: 1; 
-        overflow:auto;
+        overflow:auto; /* Permite scroll interno si el texto es muy largo */
         font-family:'monospace';
         font-size:0.95rem; 
         line-height: 1.5;
     }
-    
     /* ---------------------------------
     ESTADOS / PILLS / CHIPS
     --------------------------------- */
