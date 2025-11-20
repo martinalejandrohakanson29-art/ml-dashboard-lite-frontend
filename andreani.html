@@ -31,7 +31,7 @@
     }
     
     /* ---------------------------------
-    ESTILOS BASE (MÍNIMOS AJUSTES)
+    ESTILOS BASE (ANCHO MODIFICADO)
     --------------------------------- */
     *{box-sizing:border-box}
     body{
@@ -49,7 +49,7 @@
     }
     .wrap{
         width:100%;
-        max-width:1200px;
+        max-width:1500px; /* <<-- AUMENTADO PARA MÁS ANCHO */
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:30px;
@@ -67,14 +67,14 @@
     --------------------------------- */
     .card{
         background:var(--bg-card);
-        border:1px solid var(--border-color); /* Agregado un borde sutil */
+        border:1px solid var(--border-color);
         border-radius:20px;
         padding:30px;
         box-shadow:var(--shadow-elevation); 
         display:flex;
         flex-direction:column;
         gap:15px;
-        min-height: 500px; /* ¡AUMENTADO para mejor visualización! */
+        min-height: 500px;
     }
     h1{
         margin:0;
@@ -98,9 +98,9 @@
         font-size:1rem;
         transition:border-color 0.3s, box-shadow 0.3s;
     }
-    /* El cambio más importante: Altura del textarea aumentada desde el inicio */
+    /* Altura del textarea aumentada para evitar scroll */
     textarea{
-        height:350px; /* ¡AUMENTADO DE NUEVO (antes 280px) para que entre todo! */
+        height:350px;
         min-height: 150px;
         resize:vertical;
     }
@@ -114,7 +114,7 @@
     .field{display:flex;flex-direction:column;gap:6px;}
     .small{
         font-size:.7rem;
-        color:var(--text-muted); /* Color más sutil para etiquetas */
+        color:var(--text-muted);
         font-weight:700;
         text-transform:uppercase;
         letter-spacing:1px;
@@ -137,7 +137,7 @@
         box-shadow:0 4px 10px rgba(0,0,0,0.2);
     }
     .btn-primary{
-        background:var(--primary-color); /* CORAL */
+        background:var(--primary-color);
         color:var(--bg-card);
     }
     .btn-primary:hover:not(:disabled){
@@ -146,8 +146,8 @@
         box-shadow:0 8px 15px rgba(255, 107, 107, 0.4);
     }
     .btn-secondary{
-        background:var(--secondary-btn-bg); /* VERDE MENTA */
-        color:var(--text-main); /* Texto oscuro para contraste */
+        background:var(--secondary-btn-bg);
+        color:var(--text-main);
         box-shadow:0 4px 10px rgba(78, 205, 196, 0.2);
     }
     .btn-secondary:hover:not(:disabled){
@@ -175,13 +175,13 @@
         border-radius:12px;
         padding:15px;
         min-height:100px;
-        max-height: 350px; /* ¡AUMENTADO de 250px a 350px para ganar espacio! */
+        max-height: 350px;
         flex-grow: 1; 
         overflow:auto;
         font-family:'monospace';
-        font-size:0.95rem; 
-        line-height: 1.5;
-        color: var(--text-main); /* Asegurar color de texto oscuro */
+        font-size:0.9rem; /* <<-- LIGERAMENTE REDUCIDO PARA QUE ENTRE MEJOR */
+        line-height: 1.4; /* <<-- LIGERAMENTE REDUCIDO */
+        color: var(--text-main);
     }
     /* ---------------------------------
     ESTADOS / PILLS / CHIPS
@@ -197,9 +197,9 @@
         transition: all 0.5s ease;
     }
     /* Ajuste de colores de fondo para estados */
-    .ok{background:#A7F3D0;border:1px solid var(--ok-color);color:#065F46;} /* Fondo verde claro */
-    .warn{background:#FDE68A;border:1px solid var(--warn-color);color:#78350F;} /* Fondo ámbar claro */
-    .bad{background:#FECACA;border:1px solid var(--bad-color);color:#7F1D1D;} /* Fondo rojo claro */
+    .ok{background:#A7F3D0;border:1px solid var(--ok-color);color:#065F46;}
+    .warn{background:#FDE68A;border:1px solid var(--warn-color);color:#78350F;}
+    .bad{background:#FECACA;border:1px solid var(--bad-color);color:#7F1D1D;}
     
     .alerts{display:flex;flex-wrap:wrap;gap:8px;}
     .chip{
