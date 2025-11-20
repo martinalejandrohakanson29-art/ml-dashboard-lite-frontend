@@ -7,32 +7,35 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* ---------------------------------
-    VARIABLES DE DISEÑO - ESTÉTICA RENOVADA
+    VARIABLES DE DISEÑO - PALETA CLARA Y FRESCA
     --------------------------------- */
     :root{
-        /* Colores más vivos y modernos */
-        --primary-color: #5eead4; /* Cyan 300 - Botones/Éxito */
-        --primary-hover: #2dd4bf; /* Cyan 400 */
-        --accent-color: #a78bfa; /* Violet 400 - Títulos/Foco */
-        --bg-main: #130f1a; /* FONDO PRINCIPAL MODIFICADO (Gris muy oscuro/Púrpura) */
-        --bg-card: #241e30; /* Fondo de Tarjetas MODIFICADO (Más oscuro para el contraste) */
-        --border-color: #3f364f; /* Borde MODIFICADO para compatibilidad */
-        --text-main: #f8fafc; /* Slate 50 (Texto Principal) */
-        --text-muted: #c4b5fd; /* Violet 300 (Texto Secundario, ligeramente más claro) */
-        --ok-color: #34d399; /* Emerald 400 */
-        --warn-color: #fbbf24; /* Amber 400 */
-        --bad-color: #f87171; /* Red 400 */
-        --bg-code: #0d0914; /* Fondo de Pre/Textarea/Input (casi negro) */
-        --shadow-elevation: 0 10px 30px rgba(0,0,0,0.6); /* Sombra un poco más profunda */
+        /* Colores alegres, claros y frescos */
+        --primary-color: #FF6B6B; /* CORAL VIBRANTE - Botones/CTA */
+        --primary-hover: #E85757; /* Un tono más oscuro de coral para hover */
+        --accent-color: #007AFF; /* AZUL BRILLANTE - Títulos/Foco */
+        --bg-main: #F0F8FF; /* FONDO PRINCIPAL: Azul Cielo Muy Suave */
+        --bg-card: #FFFFFF; /* Fondo de Tarjetas: Blanco Puro para Limpieza */
+        --border-color: #CBD5E1; /* Borde: Gris Suave */
+        --text-main: #1E293B; /* Slate 900 (Texto Principal, oscuro para contraste) */
+        --text-muted: #64748B; /* Slate 500 (Texto Secundario) */
+        --ok-color: #10B981; /* Emerald 500 */
+        --warn-color: #F59E0B; /* Amber 500 */
+        --bad-color: #EF4444; /* Red 500 */
+        --bg-code: #F8FAFC; /* Fondo de Pre/Textarea/Input (Gris muy claro) */
+        --shadow-elevation: 0 4px 15px rgba(0,0,0,0.1); /* Sombra más sutil */
+
+        /* Colores Secundarios para Botones */
+        --secondary-btn-bg: #4ECDC4; /* Verde Menta Claro/Turquesa */
+        --secondary-btn-hover: #3AA9A2; /* Menta más oscuro */
     }
     
     /* ---------------------------------
-    ESTILOS BASE
+    ESTILOS BASE (MÍNIMOS AJUSTES)
     --------------------------------- */
     *{box-sizing:border-box}
     body{
         margin:0;
-        /* Fuente cambiada a Poppins */
         font-family:'Poppins', sans-serif;
         background:var(--bg-main);
         color:var(--text-main);
@@ -40,22 +43,22 @@
         display:flex;
         align-items:flex-start;
         justify-content:center;
-        padding:30px 20px; /* Padding ligeramente mayor */
-        overflow-y: auto; /* Permitir scroll si es necesario */
+        padding:30px 20px;
+        overflow-y: auto;
         scroll-behavior: smooth;
     }
     .wrap{
         width:100%;
-        max-width:1200px; /* Ancho máximo ligeramente menor */
+        max-width:1200px;
         display:grid;
         grid-template-columns:1fr 1fr;
-        gap:30px; /* Gap aumentado */
-        align-items:flex-start; /* Alineado arriba para evitar scroll innecesario */
+        gap:30px;
+        align-items:flex-start;
     }
     @media (max-width: 900px) {
       .wrap {
         grid-template-columns: 1fr;
-        gap: 40px; /* Más espacio en móviles */
+        gap: 40px;
       }
     }
     
@@ -64,20 +67,20 @@
     --------------------------------- */
     .card{
         background:var(--bg-card);
-        border:none; /* Eliminado el borde sólido */
-        border-radius:20px; /* Bordes más redondeados */
-        padding:30px; /* Padding aumentado */
+        border:1px solid var(--border-color); /* Agregado un borde sutil */
+        border-radius:20px;
+        padding:30px;
         box-shadow:var(--shadow-elevation); 
         display:flex;
         flex-direction:column;
-        gap:15px; /* Gap aumentado */
-        min-height: 400px; /* Altura mínima para mejor estética */
+        gap:15px;
+        min-height: 500px; /* ¡AUMENTADO para mejor visualización! */
     }
     h1{
         margin:0;
-        font-size:1.8rem; /* Título más grande */
-        color:var(--accent-color); /* Color de acento */
-        font-weight: 800; /* Más peso */
+        font-size:1.8rem;
+        color:var(--accent-color);
+        font-weight: 800;
         letter-spacing: -0.5px;
     }
     .muted{color:var(--text-muted);font-size:.9rem;margin:0}
@@ -87,31 +90,31 @@
     --------------------------------- */
     textarea, input, select{
         width:100%;
-        border-radius:12px; /* Bordes más redondeados */
+        border-radius:12px;
         border:1px solid var(--border-color);
         background:var(--bg-code);
         color:var(--text-main);
-        padding:12px 15px; /* Padding mayor */
+        padding:12px 15px;
         font-size:1rem;
         transition:border-color 0.3s, box-shadow 0.3s;
     }
-    /* El cambio más importante: Altura del textarea aumentada */
+    /* El cambio más importante: Altura del textarea aumentada desde el inicio */
     textarea{
-        height:280px; /* ¡Agrandado de 180px a 280px! */
+        height:350px; /* ¡AUMENTADO DE NUEVO (antes 280px) para que entre todo! */
         min-height: 150px;
         resize:vertical;
     }
     input:focus, select:focus, textarea:focus{
         border-color:var(--primary-color);
         outline:none;
-        /* Efecto de 'glow' al hacer focus */
-        box-shadow:0 0 0 3px rgba(94, 234, 212, 0.4); 
+        /* Efecto de 'glow' */
+        box-shadow:0 0 0 3px rgba(255, 107, 107, 0.4); 
     }
     .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
     .field{display:flex;flex-direction:column;gap:6px;}
     .small{
-        font-size:.7rem; /* Más pequeño */
-        color:var(--accent-color); /* Color de acento para etiquetas */
+        font-size:.7rem;
+        color:var(--text-muted); /* Color más sutil para etiquetas */
         font-weight:700;
         text-transform:uppercase;
         letter-spacing:1px;
@@ -124,31 +127,33 @@
         display:inline-flex;
         align-items:center;
         gap:10px;
-        padding:10px 20px; /* Padding aumentado */
-        border-radius:10px; /* Bordes más redondeados */
+        padding:10px 20px;
+        border-radius:10px;
         font-weight:700;
         cursor:pointer;
-        transition:all 0.3s cubic-bezier(.17,.67,.83,.67); /* Animación más suave */
+        transition:all 0.3s cubic-bezier(.17,.67,.83,.67);
         border:none;
         font-size:1rem;
         box-shadow:0 4px 10px rgba(0,0,0,0.2);
     }
     .btn-primary{
-        background:var(--primary-color);
-        color:var(--bg-card); /* Color de texto que contrasta */
+        background:var(--primary-color); /* CORAL */
+        color:var(--bg-card);
     }
     .btn-primary:hover:not(:disabled){
         background:var(--primary-hover);
-        transform:translateY(-3px); /* Efecto 3D sutil */
-        box-shadow:0 8px 15px rgba(94, 234, 212, 0.4);
+        transform:translateY(-3px);
+        box-shadow:0 8px 15px rgba(255, 107, 107, 0.4);
     }
     .btn-secondary{
-        background:var(--border-color);
-        color:var(--text-main);
+        background:var(--secondary-btn-bg); /* VERDE MENTA */
+        color:var(--text-main); /* Texto oscuro para contraste */
+        box-shadow:0 4px 10px rgba(78, 205, 196, 0.2);
     }
     .btn-secondary:hover:not(:disabled){
-        background:#594f6e; /* Un tono oscuro compatible */
+        background:var(--secondary-btn-hover);
         transform:translateY(-1px);
+        box-shadow:0 6px 12px rgba(78, 205, 196, 0.3);
     }
     .btn:disabled{
         opacity:0.4;
@@ -159,7 +164,7 @@
 
   
     /* ---------------------------------
-    CÓDIGO / PREVISUALIZACIÓN (MODIFICADO)
+    CÓDIGO / PREVISUALIZACIÓN
     --------------------------------- */
     pre{
         margin:0;
@@ -167,33 +172,34 @@
         word-break:break-word;
         background:var(--bg-code);
         border:1px solid var(--border-color);
-        border-radius:12px; /* Más redondeado */
-        padding:15px; /* Reducido de 18px a 15px */
-        min-height:100px; /* Reducido de 120px a 100px para ganar espacio */
-        max-height: 250px; /* <<-- ¡ESTE ES EL CAMBIO CLAVE! Altura máxima forzada */
+        border-radius:12px;
+        padding:15px;
+        min-height:100px;
+        max-height: 350px; /* ¡AUMENTADO de 250px a 350px para ganar espacio! */
         flex-grow: 1; 
-        overflow:auto; /* Permite scroll interno si el texto es muy largo */
+        overflow:auto;
         font-family:'monospace';
         font-size:0.95rem; 
         line-height: 1.5;
+        color: var(--text-main); /* Asegurar color de texto oscuro */
     }
     /* ---------------------------------
     ESTADOS / PILLS / CHIPS
     --------------------------------- */
     .pill{
         display:inline-block;
-        border-radius:50px; /* Más redondo */
+        border-radius:50px;
         padding:6px 14px;
-        font-weight:800; /* Más peso */
+        font-weight:800;
         font-size:.85rem;
         text-transform:uppercase;
         letter-spacing:1px;
-        transition: all 0.5s ease; /* Animación para el cambio de estado */
+        transition: all 0.5s ease;
     }
-    /* Los colores de estado no cambian mucho, solo el fondo */
-    .ok{background:#065f46;border:1px solid #10b981;color:var(--ok-color)}
-    .warn{background:#78350f;border:1px solid #f59e0b;color:var(--warn-color)}
-    .bad{background:#7f1d1d;border:1px solid #ef4444;color:var(--bad-color)}
+    /* Ajuste de colores de fondo para estados */
+    .ok{background:#A7F3D0;border:1px solid var(--ok-color);color:#065F46;} /* Fondo verde claro */
+    .warn{background:#FDE68A;border:1px solid var(--warn-color);color:#78350F;} /* Fondo ámbar claro */
+    .bad{background:#FECACA;border:1px solid var(--bad-color);color:#7F1D1D;} /* Fondo rojo claro */
     
     .alerts{display:flex;flex-wrap:wrap;gap:8px;}
     .chip{
@@ -207,10 +213,11 @@
         transition: transform 0.2s;
     }
     .chip:hover{
-        transform: scale(1.03); /* Animación sutil al pasar el mouse */
+        transform: scale(1.03);
     }
+    /* Los chips de estado sí tienen fondos sólidos/fuertes */
     .chip.bad{background:var(--bad-color);border-color:var(--bad-color);color:var(--bg-card)}
-    .chip.warn{background:var(--warn-color);border-color:var(--warn-color);color:var(--bg-main)}
+    .chip.warn{background:var(--warn-color);border-color:var(--warn-color);color:var(--text-main)}
     .chip.ok{background:var(--ok-color);border-color:var(--ok-color);color:var(--bg-card)}
 
     /* ---------------------------------
@@ -221,9 +228,9 @@
         grid-template-columns:1fr;
         gap:15px;
     }
-    .hr{height:1px;background:var(--border-color);margin:20px 0;} /* Separador más espaciado */
+    .hr{height:1px;background:var(--border-color);margin:20px 0;}
     .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:15px;}
-    .controls .field input{height:44px;} /* Inputs un poco más altos */
+    .controls .field input{height:44px;}
     .sel{min-width:280px;padding:12px 15px;height:44px;} 
     .details-row {
       display: flex;
